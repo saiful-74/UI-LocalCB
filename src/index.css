@@ -1,0 +1,142 @@
+@import 'tailwindcss';
+
+/* Lenis Smooth Scroll Styles */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+/* Google Fonts Application */
+* {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Font Family Classes */
+.font-primary {
+  font-family: 'Poppins', sans-serif;
+}
+
+.font-heading {
+  font-family: 'Playfair Display', serif;
+}
+
+.font-body {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Apply fonts to specific elements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Playfair Display', serif;
+}
+
+p, span, div, a, button, input, textarea, select {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Body text elements use Inter */
+.text-content, .content-text, article, .article-content {
+  font-family: 'Inter', sans-serif;
+}
+
+:root {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --header-bg: #D35400;      /* Warm orange for header */
+  --header-text: #ffffff;     /* White text */
+  --button-bg: #FFAC33;       /* Golden buttons */
+  --button-text: #2E8B57;     /* Dark green accent */
+  --hover-bg: #2E8B57;        /* Dark green hover */
+  --hover-text: #ffffff;       /* White text on hover */
+}
+
+[data-theme='dark'] {
+  --bg-color: #1f1f1f;
+  --text-color: #ffffff;
+  --header-bg: #111827;
+  --header-text: #ffffff;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  transition: all 0.3s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* Global button cursor pointer */
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Action button styles */
+.btn-action {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-action:hover {
+  transform: translateY(-1px);
+}
+
+.btn-action:active {
+  transform: translateY(0);
+}
+
+/* Link cursor pointer */
+a {
+  cursor: pointer;
+}
+
+/* Interactive elements */
+.interactive {
+  cursor: pointer;
+}
+
+/* Form elements */
+input[type="submit"],
+input[type="button"],
+input[type="reset"] {
+  cursor: pointer;
+}
+
+select {
+  cursor: pointer;
+}
+
+/* Custom clickable elements */
+.clickable {
+  cursor: pointer;
+}
