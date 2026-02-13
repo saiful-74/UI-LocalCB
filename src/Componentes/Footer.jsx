@@ -173,19 +173,19 @@ const Footer = () => {
               
               <div className="space-y-2">
                 <a 
-                  href="tel:+8801818777856" 
+                  href="tel:+880181112345" 
                   className="flex items-center gap-3 text-gray-300 hover:text-[#FBBF24] transition-colors duration-300"
                 >
                   <FaPhoneAlt className="text-[#FBBF24] flex-shrink-0" />
-                  <span>+880 1818 777 856</span>
+                  <span>+880 1818 111 211</span>
                 </a>
                 
                 <a 
-                  href="mailto:hakimcolor777@gmail.com" 
+                  href="mailto:sakiqw@gmail.com" 
                   className="flex items-center gap-3 text-gray-300 hover:text-[#FBBF24] transition-colors duration-300"
                 >
                   <FaEnvelope className="text-[#FBBF24] flex-shrink-0" />
-                  <span>hakimcolor777@gmail.com</span>
+                  <span>sakiq@gmail.com</span>
                 </a>
               </div>
             </div>

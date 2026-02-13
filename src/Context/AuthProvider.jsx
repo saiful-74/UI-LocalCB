@@ -18,6 +18,7 @@ const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const googleProvider = new GoogleAuthProvider();
+  const BASE_URL = import.meta.env.VITE_BACKEND_API;
 
   const createUser = async (email, password, displayName, photoURL) => {
     const userCredential = await createUserWithEmailAndPassword(
@@ -27,8 +28,8 @@ const AuthProvider = ({ children }) => {
     );
 
     await updateProfile(userCredential.user, {
-      displayName: displayName,
-      photoURL: photoURL,
+      displayName,
+      photoURL,
     });
 
     return userCredential;
@@ -42,26 +43,24 @@ const AuthProvider = ({ children }) => {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
 
-    // Save user data to MongoDB
     const userData = {
       email: user.email,
       name: user.displayName,
       profileImg: user.photoURL,
-      address: '', // Default empty address for Google users
+      address: '',
       role: 'user',
       provider: 'google',
       uid: user.uid,
       createdAt: new Date().toISOString(),
     };
 
-    // Check if user already exists in MongoDB, if not create new user
-    await axios.get(`${import.meta.env.VITE_BACKEND_API}/users/check/${user.email}`)
-      .catch(async (error) => {
-        if (error.response?.status === 404) {
-          // User doesn't exist, create new user in MongoDB
-          await axios.post(`${import.meta.env.VITE_BACKEND_API}/users`, userData);
-        }
-      });
+    try {
+      await axios.get(`${BASE_URL}/users/${user.email}`);
+    } catch (error) {
+      if (error.response?.status === 404) {
+        await axios.post(`${BASE_URL}/users`, userData);
+      }
+    }
 
     return result;
   };
@@ -78,8 +77,9 @@ const AuthProvider = ({ children }) => {
       if (currentUser) {
         try {
           const response = await axios.get(
-            `${import.meta.env.VITE_BACKEND_API}/check-role/${currentUser.email}`
+            `${BASE_URL}/users/role/${currentUser.email}`
           );
+
           setRole(response.data.role || 'user');
         } catch (error) {
           console.error('Error fetching role:', error);
@@ -88,6 +88,7 @@ const AuthProvider = ({ children }) => {
       } else {
         setRole('');
       }
+
       setLoading(false);
     });
 
@@ -105,7 +106,9 @@ const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={authInfo}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={authInfo}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 

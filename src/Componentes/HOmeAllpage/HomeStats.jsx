@@ -6,55 +6,66 @@ const HomeStats = () => {
     reviewsCount: 0,
     favoritesCount: 0,
   });
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_BACKEND_API}
-/api/stats`)
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_BACKEND_API}/api/stats`
+        );
+
+        const data = await res.json();
+
         if (data.success) {
           setStats({
-            mealsCount: data.mealsCount,
-            reviewsCount: data.reviewsCount,
-            favoritesCount: data.favoritesCount,
+            mealsCount: data.mealsCount || 0,
+            reviewsCount: data.reviewsCount || 0,
+            favoritesCount: data.favoritesCount || 0,
           });
         }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
         setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setLoading(false);
-      });
+      }
+    };
+
+    fetchStats();
   }, []);
 
   return (
-    <section className="py-16 px-4 ">
+    <section className="py-16 px-4">
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+
         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:scale-105 transition-transform duration-300 border border-gray-200 dark:border-gray-700">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-orange-500">
-            {stats.mealsCount}
+            {loading ? "..." : stats.mealsCount}
           </h2>
           <p className="mt-2 text-lg sm:text-xl md:text-2xl font-bold text-gray-700 dark:text-gray-300">
             Total Meals
           </p>
         </div>
+
         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:scale-105 transition-transform duration-300 border border-gray-200 dark:border-gray-700">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-orange-500">
-            {stats.reviewsCount}
+            {loading ? "..." : stats.reviewsCount}
           </h2>
           <p className="mt-2 text-lg sm:text-xl md:text-2xl font-bold text-gray-700 dark:text-gray-300">
             Total Reviews
           </p>
         </div>
+
         <div className="bg-gray-50 dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:scale-105 transition-transform duration-300 border border-gray-200 dark:border-gray-700">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-orange-500">
-            {stats.favoritesCount}
+            {loading ? "..." : stats.favoritesCount}
           </h2>
           <p className="mt-2 text-lg sm:text-xl md:text-2xl font-bold text-gray-700 dark:text-gray-300">
             Total Favorites
           </p>
         </div>
+
       </div>
     </section>
   );
