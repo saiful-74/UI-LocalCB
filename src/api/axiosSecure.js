@@ -1,8 +1,6 @@
 import axios from "axios";
 
-const axiosSecure = axios.create({
-  baseURL: "http://localhost:5000",
+export const api = axios.create({
+  baseURL: '/',          // now requests go to the same origin as frontend
   withCredentials: true,
 });
-
-export default axiosSecure;

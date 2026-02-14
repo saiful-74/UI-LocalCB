@@ -9,11 +9,12 @@ const Order = () => {
   const meal = useLoaderData();
   const navigate = useNavigate();
 
+  // Meal name state – initial value from loader
+  const [mealName, setMealName] = useState(meal.mealName || meal.foodName || '');
   const [quantity, setQuantity] = useState(1);
   const [userAddress, setUserAddress] = useState('');
 
   const handleConfirmOrder = async () => {
-     
     if (!userAddress.trim()) {
       Swal.fire('Warning!', 'Please enter your delivery address', 'warning');
       return;
@@ -22,7 +23,7 @@ const Order = () => {
     const totalPrice = meal.price * quantity;
 
     Swal.fire({
-      title: `Confirm Order for "${meal.mealName || meal.foodName}"?`,
+      title: `Confirm Order for "${mealName}"?`,
       text: `Your total price is $${totalPrice}. Do you want to confirm the order?`,
       icon: 'question',
       showCancelButton: true,
@@ -32,7 +33,7 @@ const Order = () => {
       if (result.isConfirmed) {
         const orderInfo = {
           foodId: meal._id,
-          mealName: meal.mealName || meal.foodName,
+          mealName: mealName,            // use editable state
           chefName: meal.chefName,
           price: meal.price,
           quantity,
@@ -48,8 +49,7 @@ const Order = () => {
 
         try {
           await axios.post(
-            `${import.meta.env.VITE_BACKEND_API}
-/orders`,
+            `${import.meta.env.VITE_BACKEND_API}/orders`,
             orderInfo
           );
           Swal.fire('Success!', 'Order placed successfully!', 'success');
@@ -64,18 +64,20 @@ const Order = () => {
     <div className="max-w-md sm:max-w-sm mx-auto p-6 mb-5 bg-orange-50 shadow-md rounded-xl border border-orange-200 text-black">
       <title>LocalChefBazaar || order</title>
       <h2 className="text-2xl sm:text-3xl font-bold text-center text-red-600 mb-6">
-        🍽 Confirm Order: {meal.mealName || meal.foodName}
+        🍽 Confirm Order: {mealName}
       </h2>
 
+      {/* Meal Name - now editable */}
       <div className="mb-4">
         <label className="font-semibold text-orange-700 mb-1 block">
           Meal Name
         </label>
         <input
           type="text"
-          value={meal.mealName || meal.foodName}
-          disabled
+          value={mealName}
+          onChange={(e) => setMealName(e.target.value)}
           className="input input-bordered w-full border border-orange-400 rounded-lg p-2 text-sm sm:text-base"
+          placeholder="Meal name"
         />
       </div>
 
