@@ -2,22 +2,26 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FiMail, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';               // ✅ added
 
 const NewsletterSection = () => {
-  const [email, setEmail] = useState('');
+  // ✅ react-hook-form setup
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
+
   const [isSubscribed, setIsSubscribed] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!email) {
-      toast.error('Please enter your email address');
-      return;
-    }
-
+  // ✅ onSubmit – receives form data
+  const onSubmit = (data) => {
+    // simulate API call
     setTimeout(() => {
       setIsSubscribed(true);
       toast.success('Successfully subscribed to our newsletter!');
-      setEmail('');
+      reset(); // clear the form
     }, 1000);
   };
 
@@ -41,16 +45,14 @@ const NewsletterSection = () => {
           </p>
 
           {!isSubscribed ? (
-            <form onSubmit={handleSubmit} className="max-w-lg mx-auto">
+            // ✅ form with handleSubmit
+            <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg mx-auto">
               <div className="flex flex-col sm:flex-row gap-4">
-                
-                {/* Input */}
+                {/* Input with register */}
                 <div className="relative flex-1">
                   <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email address"
                     className="
                       w-full pl-12 pr-4 py-4
@@ -63,27 +65,38 @@ const NewsletterSection = () => {
                       focus:outline-none
                       focus:ring-4 focus:ring-orange-500/20
                     "
+                    {...register('email', {
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^\S+@\S+$/i,
+                        message: 'Invalid email address',
+                      },
+                    })}
                   />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1 text-left">
+                      {errors.email.message}
+                    </p>
+                  )}
                 </div>
 
-           <motion.button
-  type="submit"
-  whileHover={{ scale: 1.05 }}
-  whileTap={{ scale: 0.95 }}
-  className="
-    px-8 py-4
-    bg-orange-500 text-white
-    font-bold rounded-xl
-    shadow-lg
-    cursor-pointer
-    hover:bg-orange-600
-    transition-all
-    whitespace-nowrap
-  "
->
-  Subscribe Now
-</motion.button>
-
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="
+                    px-8 py-4
+                    bg-orange-500 text-white
+                    font-bold rounded-xl
+                    shadow-lg
+                    cursor-pointer
+                    hover:bg-orange-600
+                    transition-all
+                    whitespace-nowrap
+                  "
+                >
+                  Subscribe Now
+                </motion.button>
               </div>
             </form>
           ) : (
@@ -110,7 +123,6 @@ const NewsletterSection = () => {
               </div>
             ))}
           </div>
-
         </motion.div>
       </div>
     </section>

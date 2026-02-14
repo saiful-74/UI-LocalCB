@@ -10,7 +10,7 @@ const MealsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalMeals, setTotalMeals] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
-  const itemsPerPage = 12;
+  const itemsPerPage = 10;
 
   // Search and Filter States
   const [searchTerm, setSearchTerm] = useState('');
@@ -64,19 +64,23 @@ const MealsPage = () => {
 
     // Search filter
     if (searchTerm) {
-      filtered = filtered.filter(meal =>
-        meal.foodName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        meal.chefName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (meal.ingredients && meal.ingredients.join(' ').toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+      const t = searchTerm.toLowerCase();
+      filtered = filtered.filter(meal => {
+        const mealName = (meal.foodName || meal.name || "").toLowerCase();
+        const chefName = (meal.chefName || "").toLowerCase();
+        const ing = Array.isArray(meal.ingredients) ? meal.ingredients.join(" ").toLowerCase() : "";
+        return mealName.includes(t) || chefName.includes(t) || ing.includes(t);
+      });
     }
 
     // Category filter
-    if (filters.category && filters.category !== 'All') {
-      filtered = filtered.filter(meal => 
-        meal.category?.toLowerCase() === filters.category.toLowerCase() ||
-        meal.foodName?.toLowerCase().includes(filters.category.toLowerCase())
-      );
+    if (filters.category && filters.category !== "All") {
+      const cat = filters.category.toLowerCase();
+      filtered = filtered.filter(meal => {
+        const mealCat = (meal.category || "").toLowerCase();
+        const mealName = (meal.foodName || meal.name || "").toLowerCase();
+        return mealCat === cat || mealName.includes(cat);
+      });
     }
 
     // Price range filter
@@ -114,25 +118,25 @@ const MealsPage = () => {
       let aValue, bValue;
       
       switch (sortField) {
-        case 'name':
-          aValue = a.foodName?.toLowerCase() || '';
-          bValue = b.foodName?.toLowerCase() || '';
+        case "name":
+          aValue = (a.foodName || a.name || "").toLowerCase();
+          bValue = (b.foodName || b.name || "").toLowerCase();
           break;
-        case 'price':
+        case "price":
           aValue = parseFloat(a.price) || 0;
           bValue = parseFloat(b.price) || 0;
           break;
-        case 'rating':
+        case "rating":
           aValue = parseFloat(a.rating) || 0;
           bValue = parseFloat(b.rating) || 0;
           break;
-        case 'deliveryTime':
+        case "deliveryTime":
           aValue = parseInt(a.estimatedDeliveryTime) || 0;
           bValue = parseInt(b.estimatedDeliveryTime) || 0;
           break;
         default:
-          aValue = a.foodName?.toLowerCase() || '';
-          bValue = b.foodName?.toLowerCase() || '';
+          aValue = (a.foodName || a.name || "").toLowerCase();
+          bValue = (b.foodName || b.name || "").toLowerCase();
       }
 
       if (sortDirection === 'desc') {
@@ -226,84 +230,90 @@ const MealsPage = () => {
     </div>
   );
 
-  // Meal Card Component
-  const MealCard = ({ meal }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 h-[420px] flex flex-col border border-gray-200 dark:border-gray-700 cursor-pointer group"
-      onClick={() => handleSeeDetails(meal._id)}
-    >
-      {/* Image */}
-      <div className="relative overflow-hidden h-48">
-        <img
-          src={meal.foodImage || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=250&fit=crop'}
-          alt={meal.foodName}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-          onError={(e) => {
-            e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=250&fit=crop';
-          }}
-        />
-        <div className="absolute top-3 right-3 bg-white dark:bg-gray-800 px-2 py-1 rounded-full shadow-md">
-          <div className="flex items-center gap-1 text-yellow-500">
-            <FiStar className="fill-current" />
-            <span className="text-sm font-semibold text-gray-800 dark:text-white">
-              {meal.rating || '4.5'}
-            </span>
-          </div>
-        </div>
-      </div>
+  // Meal Card Component (FIXED)
+  const MealCard = ({ meal }) => {
+    const mealName = meal.foodName || meal.name || "Meal";
+    const mealImg =
+      meal.foodImage || meal.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=250&fit=crop";
 
-      {/* Content */}
-      <div className="p-6 flex flex-col flex-1">
-        {/* Title */}
-        <h3 className="text-xl font-bold mb-2 text-gray-800 dark:text-white line-clamp-1 group-hover:text-orange-500 transition-colors duration-300">
-          {meal.foodName}
-        </h3>
-
-        {/* Short Description */}
-        <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2 flex-1">
-          {meal.ingredients ? 
-            `Delicious ${meal.foodName} made with ${meal.ingredients.slice(0, 3).join(', ')}${meal.ingredients.length > 3 ? '...' : ''}` :
-            `Fresh and delicious ${meal.foodName} prepared by our expert chef with premium ingredients.`
-          }
-        </p>
-
-        {/* Meta Info */}
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-              <FiUser className="text-orange-500" />
-              <span>{meal.chefName}</span>
-            </div>
-            <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-              <FiClock className="text-blue-500" />
-              <span>{meal.estimatedDeliveryTime || '30'} min</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-              <FiMapPin className="text-green-500" />
-              <span>{meal.chefLocation || 'Local Area'}</span>
-            </div>
-            <div className="text-lg font-bold text-orange-500">
-              ${meal.price}
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 h-[420px] flex flex-col border border-gray-200 dark:border-gray-700 cursor-pointer group"
+        onClick={() => handleSeeDetails(meal._id)}
+      >
+        {/* Image */}
+        <div className="relative overflow-hidden h-48">
+          <img
+            src={mealImg}
+            alt={mealName}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+            onError={(e) => {
+              e.target.src = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=250&fit=crop';
+            }}
+          />
+          <div className="absolute top-3 right-3 bg-white dark:bg-gray-800 px-2 py-1 rounded-full shadow-md">
+            <div className="flex items-center gap-1 text-yellow-500">
+              <FiStar className="fill-current" />
+              <span className="text-sm font-semibold text-gray-800 dark:text-white">
+                {meal.rating || '4.5'}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* View Details Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent double click from card
-            handleSeeDetails(meal._id);
-          }}
-          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 cursor-pointer group-hover:from-orange-600 group-hover:to-red-600"
-        >
-          <FiEye />
-          View Details
-        </button>
+        {/* Content */}
+        <div className="p-6 flex flex-col flex-1">
+          {/* Title */}
+          <h3 className="text-xl font-bold mb-2 text-gray-800 dark:text-white line-clamp-1 group-hover:text-orange-500 transition-colors duration-300">
+            {mealName}
+          </h3>
+
+          {/* Short Description */}
+          <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2 flex-1">
+            {meal.ingredients ? 
+              `Delicious ${mealName} made with ${meal.ingredients.slice(0, 3).join(', ')}${meal.ingredients.length > 3 ? '...' : ''}` :
+              `Fresh and delicious ${mealName} prepared by our expert chef with premium ingredients.`
+            }
+          </p>
+
+          {/* Meta Info */}
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                <FiUser className="text-orange-500" />
+                <span>{meal.chefName}</span>
+              </div>
+              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                <FiClock className="text-blue-500" />
+                <span>{meal.estimatedDeliveryTime || '30'} min</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                <FiMapPin className="text-green-500" />
+                <span>{meal.chefLocation || 'Local Area'}</span>
+              </div>
+              <div className="text-lg font-bold text-orange-500">
+                ${meal.price}
+              </div>
+            </div>
+          </div>
+
+          {/* View Details Button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent double click from card
+              handleSeeDetails(meal._id);
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 cursor-pointer group-hover:from-orange-600 group-hover:to-red-600"
+          >
+            <FiEye />
+            View Details
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen  py-12">

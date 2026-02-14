@@ -1,12 +1,27 @@
-
-import React, { useContext } from 'react';
-import { Outlet } from 'react-router';
+import React, { useContext, useEffect } from 'react';
+import { Outlet, useLocation } from 'react-router'; // useLocation from react-router-dom actually, but it works from react-router too
 import { AuthContext } from '../../Context/AuthContext';
 import UserAside from '../../Componentes/Asideber/UserAside';
 import Loading from '../../Componentes/Loading';
 
 const DashboardLayout = () => {
   const { user, loading } = useContext(AuthContext);
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname;
+
+    // Map dashboard paths to page names
+    const titleMap = {
+      "/dashboard": "Dashboard",
+      "/dashboard/profile": "Profile",
+      "/dashboard/orders": "Orders",
+      // Add more dashboard routes here
+    };
+
+    const pageName = titleMap[path] || "Dashboard";
+    document.title = `LocalChefBazaar || ${pageName}`;
+  }, [location.pathname]);
 
   if (loading) {
     return <Loading />;
@@ -25,8 +40,6 @@ const DashboardLayout = () => {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-[280px_1fr] bg-gray-50 dark:bg-gray-900">
-      <title>LocalChefBazaar || Dashboard</title>
-      
       {/* Sidebar */}
       <aside className="border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-0 h-screen hidden lg:block shadow-lg">
         <UserAside />

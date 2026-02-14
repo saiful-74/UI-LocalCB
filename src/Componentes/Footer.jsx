@@ -13,9 +13,17 @@ import {
 } from 'react-icons/fa';
 import { FiArrowRight, FiMail } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';               // ✅ added
 
 const Footer = () => {
-  const [email, setEmail] = useState('');
+  // ✅ react-hook-form setup
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
+
   const [isSubscribing, setIsSubscribing] = useState(false);
 
   const quickLinks = [
@@ -36,15 +44,10 @@ const Footer = () => {
     { name: 'Become a Chef', path: '/signup' },
   ];
 
-  const handleNewsletterSubmit = async (e) => {
-    e.preventDefault();
-    if (!email || !email.includes('@')) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-
+  // ✅ onSubmit – receives form data
+  const onSubmit = async (data) => {
     setIsSubscribing(true);
-    
+
     try {
       // Simulate newsletter subscription
       setTimeout(() => {
@@ -52,7 +55,7 @@ const Footer = () => {
           icon: '📧',
           duration: 4000,
         });
-        setEmail('');
+        reset(); // ✅ clear form
         setIsSubscribing(false);
       }, 1000);
     } catch {
@@ -65,7 +68,7 @@ const Footer = () => {
     <footer className="bg-[#111827] text-white pt-16 pb-6 px-6 md:px-20">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10 mb-12">
-          {/* Company Info */}
+          {/* Company Info (unchanged) */}
           <div className="md:col-span-1">
             <h2 className="text-2xl font-bold text-[#FBBF24] mb-4">LocalChefBazaar</h2>
             <p className="text-gray-300 mb-6 leading-relaxed">
@@ -116,11 +119,9 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Quick Links (unchanged) */}
           <div>
-            <h3 className="text-xl font-semibold mb-6 text-[#FBBF24]">
-              Quick Links
-            </h3>
+            <h3 className="text-xl font-semibold mb-6 text-[#FBBF24]">Quick Links</h3>
             <ul className="space-y-3">
               {quickLinks.map((link, index) => (
                 <li key={index}>
@@ -136,11 +137,9 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Support */}
+          {/* Support (unchanged) */}
           <div>
-            <h3 className="text-xl font-semibold mb-6 text-[#FBBF24]">
-              Support
-            </h3>
+            <h3 className="text-xl font-semibold mb-6 text-[#FBBF24]">Support</h3>
             <ul className="space-y-3">
               {supportLinks.map((link, index) => (
                 <li key={index}>
@@ -156,11 +155,9 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Contact Info */}
+          {/* Contact Info (unchanged) */}
           <div>
-            <h3 className="text-xl font-semibold mb-6 text-[#FBBF24]">
-              Contact Info
-            </h3>
+            <h3 className="text-xl font-semibold mb-6 text-[#FBBF24]">Contact Info</h3>
             <div className="space-y-4">
               <div className="flex items-start gap-3 text-gray-300">
                 <FaMapMarkerAlt className="text-[#FBBF24] mt-1 flex-shrink-0" />
@@ -193,9 +190,7 @@ const Footer = () => {
             <div className="mt-6">
               <div className="flex items-center gap-3 mb-3">
                 <FaClock className="text-[#FBBF24]" />
-                <h4 className="text-lg font-semibold text-[#FBBF24]">
-                  Business Hours
-                </h4>
+                <h4 className="text-lg font-semibold text-[#FBBF24]">Business Hours</h4>
               </div>
               <div className="text-gray-300 space-y-1 ml-6">
                 <p className="flex justify-between">
@@ -206,9 +201,7 @@ const Footer = () => {
                   <span>Sat - Sun:</span>
                   <span>9:00 AM - 11:00 PM</span>
                 </p>
-                <p className="text-sm text-gray-400 mt-2">
-                  * Order processing 24/7
-                </p>
+                <p className="text-sm text-gray-400 mt-2">* Order processing 24/7</p>
               </div>
             </div>
           </div>
@@ -226,21 +219,32 @@ const Footer = () => {
             <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
               Subscribe to our newsletter for the latest updates on new chefs, special offers, and delicious recipes delivered to your inbox
             </p>
-            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="flex-1 px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FBBF24] focus:border-transparent text-white placeholder-gray-400 transition-all duration-300"
-                required
-              />
-              <button 
+
+            {/* ✅ form with handleSubmit */}
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+              <div className="flex-1">
+                <input
+                  type="email"
+                  placeholder="Enter your email address"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FBBF24] focus:border-transparent text-white placeholder-gray-400 transition-all duration-300"
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^\S+@\S+$/i,
+                      message: 'Invalid email address',
+                    },
+                  })}
+                />
+                {errors.email && (
+                  <p className="text-red-400 text-sm mt-1 text-left">{errors.email.message}</p>
+                )}
+              </div>
+              <button
                 type="submit"
                 disabled={isSubscribing}
                 className={`px-6 py-3 font-semibold rounded-lg transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
-                  isSubscribing 
-                    ? 'bg-gray-600 cursor-not-allowed' 
+                  isSubscribing
+                    ? 'bg-gray-600 cursor-not-allowed'
                     : 'bg-[#FBBF24] hover:bg-yellow-400 text-gray-900'
                 }`}
               >
@@ -260,7 +264,7 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Bottom Bar */}
+        {/* Bottom Bar (unchanged) */}
         <div className="border-t border-gray-700 pt-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-center md:text-left">

@@ -9,30 +9,34 @@ import toast, { Toaster } from 'react-hot-toast';
 import { Helmet } from 'react-helmet';
 import { doc, setDoc } from 'firebase/firestore';
 import axios from 'axios';
+import { useForm } from 'react-hook-form';               // ✅ added
 
 const SignUp = () => {
   const navigate = useNavigate();
   const { createUser, signInWithGoogle } = useContext(AuthContext);
 
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
+  // local state for file and UI helpers
   const [profileFile, setProfileFile] = useState(null);
-  const [address, setAddress] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // ✅ react-hook-form setup
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
+
   const handleToggle = () => setShowPassword(!showPassword);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ✅ new onSubmit – receives form data
+  const onSubmit = async (data) => {
     setLoading(true);
 
-    if (!email || !name || !address || !password || !confirmPassword) {
-      setLoading(false);
-      return toast.error('Please fill all fields.');
-    }
+    const { email, name, address, password, confirmPassword } = data;
+
+    // ---------- validations that are not handled by register ----------
     if (!profileFile) {
       setLoading(false);
       return toast.error('Please upload a profile image.');
@@ -59,6 +63,7 @@ const SignUp = () => {
     }
 
     try {
+      // upload image to imgbb
       const formData = new FormData();
       formData.append('image', profileFile);
 
@@ -68,30 +73,31 @@ const SignUp = () => {
       );
       const profileImg = uploadRes.data.data.display_url;
 
+      // create firebase user
       const userCredential = await createUser(email, password);
 
+      // update profile with name and photo
       await updateProfile(userCredential.user, {
         displayName: name,
         photoURL: profileImg,
       });
 
-      const userData = { 
-        email, 
-        name, 
-        address, 
-        password, 
+      // save to backend
+      const userData = {
+        email,
+        name,
+        address,
+        password,
         profileImg,
         role: 'user',
         provider: 'email',
         uid: userCredential.user.uid,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
-      
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_API}/users`,
-        userData
-      );
 
+      await axios.post(`${import.meta.env.VITE_BACKEND_API}/users`, userData);
+
+      // save to firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         name,
         email,
@@ -104,21 +110,25 @@ const SignUp = () => {
       });
 
       toast.success('Account created successfully!');
+      reset();               // ✅ clear form
+      setProfileFile(null);  // clear file input
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
       console.error('Sign-up error:', error);
-      
+
       let errorMessage = 'Account creation failed. Please try again.';
-      
+
       switch (error.code) {
         case 'auth/email-already-in-use':
-          errorMessage = 'An account with this email already exists. Please sign in instead.';
+          errorMessage =
+            'An account with this email already exists. Please sign in instead.';
           break;
         case 'auth/invalid-email':
           errorMessage = 'Invalid email format. Please enter a valid email.';
           break;
         case 'auth/operation-not-allowed':
-          errorMessage = 'Email/password accounts are not enabled. Please contact support.';
+          errorMessage =
+            'Email/password accounts are not enabled. Please contact support.';
           break;
         case 'auth/weak-password':
           errorMessage = 'Password is too weak. Please choose a stronger password.';
@@ -129,7 +139,7 @@ const SignUp = () => {
         default:
           errorMessage = error.message || 'Account creation failed. Please try again.';
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -138,16 +148,16 @@ const SignUp = () => {
 
   const handleGoogleSignUp = async () => {
     setLoading(true);
-    
+
     try {
       await signInWithGoogle();
       toast.success('Google sign-up successful!');
       navigate('/');
     } catch (error) {
       console.error('Google sign-up error:', error);
-      
+
       let errorMessage = 'Google sign-up failed. Please try again.';
-      
+
       switch (error.code) {
         case 'auth/popup-closed-by-user':
           errorMessage = 'Sign-up cancelled. Please try again.';
@@ -162,12 +172,13 @@ const SignUp = () => {
           errorMessage = 'Network error. Please check your connection and try again.';
           break;
         case 'auth/account-exists-with-different-credential':
-          errorMessage = 'An account already exists with this email using a different sign-in method.';
+          errorMessage =
+            'An account already exists with this email using a different sign-in method.';
           break;
         default:
           errorMessage = error.message || 'Google sign-up failed. Please try again.';
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -206,89 +217,102 @@ const SignUp = () => {
             <div className="flex-1 border-t border-gray-300"></div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          {/* ✅ form with handleSubmit */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            {/* Name */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Name</label>
               <input
                 type="text"
-                name="name"
-                className="w-full px-4 py-3  placeholder-gray-600 bg-orange-50 border  text-black border-orange-200 rounded-xl"
+                className="w-full px-4 py-3 placeholder-gray-600 bg-orange-50 border text-black border-orange-200 rounded-xl"
                 placeholder="Enter your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
+                {...register('name', { required: 'Name is required' })}
               />
+              {errors.name && (
+                <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+              )}
             </div>
 
+            {/* Profile Image (kept separate because it's a file) */}
             <div className="flex flex-col">
-              <label className=" font-medium mb-1">Profile Image</label>
+              <label className="font-medium mb-1">Profile Image</label>
               <input
                 type="file"
-                className=" w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl text-gray-900"
+                className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl text-gray-900"
                 onChange={(e) => setProfileFile(e.target.files[0])}
                 required
               />
             </div>
 
+            {/* Address */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Address</label>
               <input
                 type="text"
-                name="text"
                 className="w-full px-4 text-black py-3 bg-orange-50 border border-orange-200 rounded-xl placeholder-gray-600"
                 placeholder="Enter your address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                required
+                {...register('address', { required: 'Address is required' })}
               />
+              {errors.address && (
+                <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>
+              )}
             </div>
 
+            {/* Email */}
             <div className="flex flex-col">
-              <label className=" font-medium mb-1">Email</label>
+              <label className="font-medium mb-1">Email</label>
               <input
                 type="email"
-                name="email"
-                className=" text-black w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl placeholder-gray-600"
+                className="text-black w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl placeholder-gray-600"
                 placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                {...register('email', {
+                  required: 'Email is required',
+                  pattern: {
+                    value: /^\S+@\S+$/i,
+                    message: 'Invalid email address',
+                  },
+                })}
               />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+              )}
             </div>
 
+            {/* Password */}
             <div className="flex flex-col relative">
-              <label className=" font-medium mb-1">Password</label>
+              <label className="font-medium mb-1">Password</label>
               <input
                 type={showPassword ? 'text' : 'password'}
-                className="w-full px-4 py-3 bg-orange-50 border  text-black border-orange-200 rounded-xl pr-12 placeholder-gray-600"
+                className="w-full px-4 py-3 bg-orange-50 border text-black border-orange-200 rounded-xl pr-12 placeholder-gray-600"
                 placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                {...register('password', { required: 'Password is required' })}
               />
               <button
                 type="button"
                 className="absolute right-4 top-[42px] text-red-700"
                 onClick={handleToggle}
               >
-                {showPassword ? (
-                  <AiOutlineEyeInvisible size={22} />
-                ) : (
-                  <AiOutlineEye size={22} />
-                )}
+                {showPassword ? <AiOutlineEyeInvisible size={22} /> : <AiOutlineEye size={22} />}
               </button>
+              {errors.password && (
+                <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+              )}
             </div>
 
+            {/* Confirm Password */}
             <div className="flex flex-col">
-              <label className=" font-medium mb-1">Confirm Password</label>
+              <label className="font-medium mb-1">Confirm Password</label>
               <input
                 type={showPassword ? 'text' : 'password'}
                 className="w-full px-4 py-3 text-black bg-orange-50 border border-orange-200 rounded-xl placeholder-gray-600"
                 placeholder="Confirm password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
+                {...register('confirmPassword', {
+                  required: 'Please confirm your password',
+                })}
               />
+              {errors.confirmPassword && (
+                <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+              )}
             </div>
 
             <button
@@ -302,10 +326,7 @@ const SignUp = () => {
 
           <p className="text-sm text-center text-orange-700 mt-6">
             Already have an account?{' '}
-            <NavLink
-              to="/signin"
-              className="text-orange-600 font-semibold hover:underline"
-            >
+            <NavLink to="/signin" className="text-orange-600 font-semibold hover:underline">
               Sign In
             </NavLink>
           </p>

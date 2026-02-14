@@ -1,4 +1,3 @@
-
 import { auth } from '../Firebase/Firebase.confige';
 import React, { useContext, useState } from 'react';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
@@ -8,81 +7,90 @@ import { AuthContext } from '../Context/AuthContext';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import toast, { Toaster } from 'react-hot-toast';
 import { Helmet } from 'react-helmet';
+import { useForm } from 'react-hook-form';               // ✅ added
 
 const SignIn = () => {
-  const { signinUser, signInWithGoogle } = useContext(AuthContext); 
+  const { signinUser, signInWithGoogle } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('');
-  const [passcode, setPasscode] = useState('');
+  // local UI state
   const [show, setShow] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState(''); // for Firebase errors
+
+  // ✅ react-hook-form setup
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm();
+
+  const emailValue = watch('email'); // watch email for "Forgot Password" button
 
   const handleToggle = () => setShow(!show);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError('');
+  // ✅ onSubmit – receives form data
+  const onSubmit = async (data) => {
+    setAuthError('');
     setLoading(true);
 
-    signinUser(email, passcode) 
-      .then(() => {
-        setEmail('');
-        setPasscode('');
-        toast.success('Login successful!');
-        navigate('/');
-      })
-      .catch((err) => {
-        console.error('Sign-in error:', err);
-        
-        // Handle specific Firebase auth errors
-        let errorMessage = 'Login failed. Please try again.';
-        
-        switch (err.code) {
-          case 'auth/invalid-credential':
-            errorMessage = 'Invalid email or password. Please check your credentials and try again.';
-            break;
-          case 'auth/user-not-found':
-            errorMessage = 'No account found with this email. Please sign up first.';
-            break;
-          case 'auth/wrong-password':
-            errorMessage = 'Incorrect password. Please try again.';
-            break;
-          case 'auth/invalid-email':
-            errorMessage = 'Invalid email format. Please enter a valid email.';
-            break;
-          case 'auth/user-disabled':
-            errorMessage = 'This account has been disabled. Please contact support.';
-            break;
-          case 'auth/too-many-requests':
-            errorMessage = 'Too many failed attempts. Please try again later.';
-            break;
-          default:
-            errorMessage = err.message || 'Login failed. Please try again.';
-        }
-        
-        setError(errorMessage);
-        toast.error(errorMessage);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    const { email, password } = data;
+
+    try {
+      await signinUser(email, password);
+      reset(); // clear form
+      toast.success('Login successful!');
+      navigate('/');
+    } catch (err) {
+      console.error('Sign-in error:', err);
+
+      let errorMessage = 'Login failed. Please try again.';
+
+      switch (err.code) {
+        case 'auth/invalid-credential':
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+          break;
+        case 'auth/user-not-found':
+          errorMessage = 'No account found with this email. Please sign up first.';
+          break;
+        case 'auth/wrong-password':
+          errorMessage = 'Incorrect password. Please try again.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email format. Please enter a valid email.';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'This account has been disabled. Please contact support.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many failed attempts. Please try again later.';
+          break;
+        default:
+          errorMessage = err.message || 'Login failed. Please try again.';
+      }
+
+      setAuthError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleSignIn = async () => {
-    setError('');
+    setAuthError('');
     setLoading(true);
-    
+
     try {
       await signInWithGoogle();
       toast.success('Google login successful!');
       navigate('/');
     } catch (error) {
       console.error('Google sign-in error:', error);
-      
+
       let errorMessage = 'Google sign-in failed. Please try again.';
-      
+
       switch (error.code) {
         case 'auth/popup-closed-by-user':
           errorMessage = 'Sign-in cancelled. Please try again.';
@@ -99,8 +107,8 @@ const SignIn = () => {
         default:
           errorMessage = error.message || 'Google sign-in failed. Please try again.';
       }
-      
-      setError(errorMessage);
+
+      setAuthError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -108,20 +116,20 @@ const SignIn = () => {
   };
 
   const handleForgotPassword = () => {
-    if (!email) {
+    if (!emailValue) {
       toast.error('Please enter your email first!');
       return;
     }
 
-    sendPasswordResetEmail(auth, email)
+    sendPasswordResetEmail(auth, emailValue)
       .then(() => {
         toast.success('Password reset email sent! Check your inbox.');
       })
       .catch((err) => {
         console.error('Password reset error:', err);
-        
+
         let errorMessage = 'Failed to send password reset email.';
-        
+
         switch (err.code) {
           case 'auth/user-not-found':
             errorMessage = 'No account found with this email address.';
@@ -135,7 +143,7 @@ const SignIn = () => {
           default:
             errorMessage = err.message || 'Failed to send password reset email.';
         }
-        
+
         toast.error(errorMessage);
       });
   };
@@ -175,63 +183,70 @@ const SignIn = () => {
           <div className="flex-1 border-t border-gray-300"></div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* ✅ form with handleSubmit */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* Email */}
           <div className="flex flex-col">
             <label className="text-orange-800 font-medium mb-1">Email</label>
             <input
               type="email"
-              value={email}
-              name="email"
-              onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
-              required
               className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl placeholder-gray-600 text-black"
+              {...register('email', {
+                required: 'Email is required',
+                pattern: {
+                  value: /^\S+@\S+$/i,
+                  message: 'Invalid email address',
+                },
+              })}
             />
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+            )}
           </div>
 
+          {/* Password with toggle */}
           <div className="relative flex flex-col">
             <label className="text-orange-800 font-medium mb-1">Password</label>
             <input
               type={show ? 'text' : 'password'}
-              value={passcode}
-              onChange={(e) => setPasscode(e.target.value)}
-              name="password"
               placeholder="Enter your password"
-              required
               className="w-full px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl pr-12 placeholder-gray-600 text-black"
+              {...register('password', { required: 'Password is required' })}
             />
             <button
               type="button"
               onClick={handleToggle}
               className="absolute right-4 top-[42px] text-orange-600 hover:text-orange-800"
             >
-              {show ? (
-                <AiOutlineEyeInvisible size={22} />
-              ) : (
-                <AiOutlineEye size={22} />
-              )}
+              {show ? <AiOutlineEyeInvisible size={22} /> : <AiOutlineEye size={22} />}
             </button>
+            {errors.password && (
+              <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+            )}
           </div>
 
+          {/* Forgot Password */}
           <div className="text-right">
             <button
               type="button"
               onClick={handleForgotPassword}
-              disabled={!email}
+              disabled={!emailValue}
               className={`text-sm ${
-                email
+                emailValue
                   ? 'text-orange-600 hover:underline'
-                  : 'text-gray-400 cursor-not-allowed '
+                  : 'text-gray-400 cursor-not-allowed'
               }`}
             >
               Forgot Password?
             </button>
           </div>
 
-          {error && (
+          {/* Firebase Auth Error Display */}
+          {authError && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-red-600 text-sm">{error}</p>
-              {error.includes('Invalid email or password') && (
+              <p className="text-red-600 text-sm">{authError}</p>
+              {authError.includes('Invalid email or password') && (
                 <div className="mt-2 text-xs text-red-500">
                   <p>• Make sure your email and password are correct</p>
                   <p>• Try using the "Forgot Password?" link if needed</p>

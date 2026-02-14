@@ -1,35 +1,31 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FiMail, FiPhone, FiMapPin, FiClock, FiSend, FiCheck, FiX } from 'react-icons/fi';
+import { FiMail, FiPhone, FiMapPin, FiClock, FiSend } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { useForm } from 'react-hook-form';               // ✅ added
 
 const Contact = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
+  // ✅ react-hook-form setup
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ✅ onSubmit – receives form data
+  const onSubmit = async (data) => {
     setIsSubmitting(true);
 
     try {
       const formDataToSend = new FormData();
       formDataToSend.append('access_key', '7ecdb9b5-f537-4155-ab8c-745a33ca4a13');
-      formDataToSend.append('name', formData.name);
-      formDataToSend.append('email', formData.email);
-      formDataToSend.append('subject', formData.subject);
-      formDataToSend.append('message', formData.message);
+      formDataToSend.append('name', data.name);
+      formDataToSend.append('email', data.email);
+      formDataToSend.append('subject', data.subject);
+      formDataToSend.append('message', data.message);
       formDataToSend.append('from_name', 'LocalChefBazaar Contact Form');
       formDataToSend.append('to_name', 'LocalChefBazaar Team');
 
@@ -50,7 +46,7 @@ const Contact = () => {
             fontWeight: 'bold',
           },
         });
-        setFormData({ name: '', email: '', subject: '', message: '' });
+        reset(); // ✅ clear form
       } else {
         throw new Error(result.message || 'Failed to send message');
       }
@@ -162,66 +158,96 @@ const Contact = () => {
               <h2 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">
                 Send us a Message
               </h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              {/* ✅ form with handleSubmit */}
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Name */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Full Name *
                   </label>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    minLength="2"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300"
                     placeholder="Enter your full name"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300"
+                    {...register('name', {
+                      required: 'Name is required',
+                      minLength: {
+                        value: 2,
+                        message: 'Name must be at least 2 characters',
+                      },
+                    })}
                   />
+                  {errors.name && (
+                    <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
+                  )}
                 </div>
+
+                {/* Email */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Email Address *
                   </label>
                   <input
                     type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300"
                     placeholder="Enter your email address"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300"
+                    {...register('email', {
+                      required: 'Email is required',
+                      pattern: {
+                        value: /^\S+@\S+$/i,
+                        message: 'Invalid email address',
+                      },
+                    })}
                   />
+                  {errors.email && (
+                    <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                  )}
                 </div>
+
+                {/* Subject */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Subject *
                   </label>
                   <input
                     type="text"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    required
-                    minLength="5"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300"
                     placeholder="What's this about?"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-300"
+                    {...register('subject', {
+                      required: 'Subject is required',
+                      minLength: {
+                        value: 5,
+                        message: 'Subject must be at least 5 characters',
+                      },
+                    })}
                   />
+                  {errors.subject && (
+                    <p className="text-red-500 text-sm mt-1">{errors.subject.message}</p>
+                  )}
                 </div>
+
+                {/* Message */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Message *
                   </label>
                   <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    required
-                    minLength="10"
                     rows="5"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none transition-all duration-300"
                     placeholder="Tell us more about your inquiry... (minimum 10 characters)"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent dark:bg-gray-700 dark:text-white resize-none transition-all duration-300"
+                    {...register('message', {
+                      required: 'Message is required',
+                      minLength: {
+                        value: 10,
+                        message: 'Message must be at least 10 characters',
+                      },
+                    })}
                   ></textarea>
+                  {errors.message && (
+                    <p className="text-red-500 text-sm mt-1">{errors.message.message}</p>
+                  )}
                 </div>
+
                 <motion.button
                   type="submit"
                   disabled={isSubmitting}
@@ -248,7 +274,7 @@ const Contact = () => {
               </form>
             </motion.div>
 
-            {/* Map/Additional Info */}
+            {/* Map/Additional Info (unchanged) */}
             <motion.div
               className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl"
               initial={{ opacity: 0, x: 30 }}
@@ -301,7 +327,7 @@ const Contact = () => {
         </div>
       </section>
 
-      {/* FAQ Quick Links */}
+      {/* FAQ Quick Links (unchanged) */}
       <section className="py-16 px-4 bg-white dark:bg-gray-800">
         <div className="max-w-4xl mx-auto text-center">
           <motion.h2
