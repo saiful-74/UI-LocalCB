@@ -20,6 +20,12 @@ const AuthProvider = ({ children }) => {
   const googleProvider = new GoogleAuthProvider();
   const BASE_URL = import.meta.env.VITE_BACKEND_API;
 
+  // Create axios instance with credentials
+  const axiosSecure = axios.create({
+    baseURL: BASE_URL,
+    withCredentials: true, // This is important for cookies
+  });
+
   const createUser = async (email, password, displayName, photoURL) => {
     const userCredential = await createUserWithEmailAndPassword(
       auth,
@@ -65,8 +71,15 @@ const AuthProvider = ({ children }) => {
     return result;
   };
 
-  const signoutUser = () => {
-    return signOut(auth);
+  const signoutUser = async () => {
+    try {
+      // Clear JWT cookie on signout
+      await axiosSecure.post('/logout');
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      return signOut(auth);
+    }
   };
 
   useEffect(() => {
@@ -74,18 +87,25 @@ const AuthProvider = ({ children }) => {
       setUser(currentUser);
       setLoading(true);
 
-      if (currentUser) {
+      if (currentUser?.email) {
         try {
-          const response = await axios.get(
-            `${BASE_URL}/users/role/${currentUser.email}`
-          );
-
-          setRole(response.data.role || 'user');
+          // 1) First set JWT cookie
+          await axiosSecure.post('/jwt', { email: currentUser.email });
+          
+          // 2) Then fetch role
+          const roleRes = await axiosSecure.get(`/users/role/${currentUser.email}`);
+          setRole(roleRes.data?.role || 'user');
         } catch (error) {
-          console.error('Error fetching role:', error);
+          console.error('Error in auth flow:', error);
           setRole('user');
         }
       } else {
+        try {
+          // Clear JWT cookie when no user
+          await axiosSecure.post('/logout');
+        } catch (error) {
+          console.error('Error clearing cookie:', error);
+        }
         setRole('');
       }
 
