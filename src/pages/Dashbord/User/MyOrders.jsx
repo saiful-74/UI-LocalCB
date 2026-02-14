@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import axios from 'axios';
+import { api } from "../../../api/axiosSecure";
 import { AuthContext } from '../../../Context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import Loading from '../../../Componentes/Loading';
@@ -15,7 +15,7 @@ const MyOrders = () => {
     const fetchOrders = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${import.meta.env.VITE_BACKEND_API}/orders/${user.email}`);
+        const res = await api.get(`/orders/${user.email}`);
 
         if (res.data.success) {
           setOrders(res.data.data);
@@ -36,15 +36,12 @@ const MyOrders = () => {
 
   const handlePay = async (order) => {
     try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_API}/create-checkout-session`,
-        {
-          orderId: order._id,
-          amount: order.totalPrice,
-          email: user.email,
-          name: order.mealName || 'Customer',
-        }
-      );
+      const res = await api.post(`/create-checkout-session`, {
+        orderId: order._id,
+        amount: order.totalPrice,
+        email: user.email,
+        name: order.mealName || 'Customer',
+      });
 
       if (res.data.url) {
         window.location.href = res.data.url;

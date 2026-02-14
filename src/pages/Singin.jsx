@@ -1,3 +1,4 @@
+import { api } from "../api/axiosSecure";                     // ✅ JWT enabled axios instance
 import { auth } from '../Firebase/Firebase.confige';
 import React, { useContext, useState } from 'react';
 import { AiOutlineEye, AiOutlineEyeInvisible } from 'react-icons/ai';
@@ -7,18 +8,16 @@ import { AuthContext } from '../Context/AuthContext';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import toast, { Toaster } from 'react-hot-toast';
 import { Helmet } from 'react-helmet';
-import { useForm } from 'react-hook-form';               // ✅ added
+import { useForm } from 'react-hook-form';
 
 const SignIn = () => {
   const { signinUser, signInWithGoogle } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  // local UI state
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [authError, setAuthError] = useState(''); // for Firebase errors
+  const [authError, setAuthError] = useState('');
 
-  // ✅ react-hook-form setup
   const {
     register,
     handleSubmit,
@@ -27,11 +26,10 @@ const SignIn = () => {
     formState: { errors },
   } = useForm();
 
-  const emailValue = watch('email'); // watch email for "Forgot Password" button
+  const emailValue = watch('email');
 
   const handleToggle = () => setShow(!show);
 
-  // ✅ onSubmit – receives form data
   const onSubmit = async (data) => {
     setAuthError('');
     setLoading(true);
@@ -39,8 +37,21 @@ const SignIn = () => {
     const { email, password } = data;
 
     try {
+      // 1️⃣ Firebase email/password sign in
       await signinUser(email, password);
-      reset(); // clear form
+
+      // 2️⃣ Get the currently signed‑in user from Firebase
+      const user = auth.currentUser;
+
+      // 3️⃣ Send email to your backend to set the JWT cookie
+      await api.post("/jwt", {
+        email: user.email,
+      });
+
+      console.log("JWT cookie set successfully");
+
+      // 4️⃣ Success actions
+      reset();
       toast.success('Login successful!');
       navigate('/');
     } catch (err) {
@@ -183,7 +194,7 @@ const SignIn = () => {
           <div className="flex-1 border-t border-gray-300"></div>
         </div>
 
-        {/* ✅ form with handleSubmit */}
+        {/* form with handleSubmit */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           {/* Email */}
           <div className="flex flex-col">

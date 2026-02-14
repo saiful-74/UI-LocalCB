@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../Firebase/Firebase.confige';
 import axios from 'axios';
+import { api } from '../api/axiosSecure'; // ✅ import the axios instance from your api folder
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -20,10 +21,10 @@ const AuthProvider = ({ children }) => {
   const googleProvider = new GoogleAuthProvider();
   const BASE_URL = import.meta.env.VITE_BACKEND_API;
 
-  // Create axios instance with credentials
+  // Create axios instance with credentials (you may keep this for other calls)
   const axiosSecure = axios.create({
     baseURL: BASE_URL,
-    withCredentials: true, // This is important for cookies
+    withCredentials: true,
   });
 
   const createUser = async (email, password, displayName, photoURL) => {
@@ -38,11 +39,17 @@ const AuthProvider = ({ children }) => {
       photoURL,
     });
 
+    await axiosSecure.post('/jwt', { email: userCredential.user.email });
+
     return userCredential;
   };
 
-  const signinUser = (email, password) => {
-    return signInWithEmailAndPassword(auth, email, password);
+  const signinUser = async (email, password) => {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+    await axiosSecure.post('/jwt', { email: userCredential.user.email });
+
+    return userCredential;
   };
 
   const signInWithGoogle = async () => {
@@ -68,17 +75,18 @@ const AuthProvider = ({ children }) => {
       }
     }
 
+    await axiosSecure.post('/jwt', { email: user.email });
+
     return result;
   };
 
+  // ✅ Replaced logout function exactly as instructed
   const signoutUser = async () => {
     try {
-      // Clear JWT cookie on signout
-      await axiosSecure.post('/logout');
+      await api.post('/logout'); // 🔥 cookie clear from backend
+      await signOut(auth);
     } catch (error) {
-      console.error('Error during logout:', error);
-    } finally {
-      return signOut(auth);
+      console.log(error);
     }
   };
 
@@ -89,10 +97,8 @@ const AuthProvider = ({ children }) => {
 
       if (currentUser?.email) {
         try {
-          // 1) First set JWT cookie
           await axiosSecure.post('/jwt', { email: currentUser.email });
           
-          // 2) Then fetch role
           const roleRes = await axiosSecure.get(`/users/role/${currentUser.email}`);
           setRole(roleRes.data?.role || 'user');
         } catch (error) {
@@ -101,7 +107,6 @@ const AuthProvider = ({ children }) => {
         }
       } else {
         try {
-          // Clear JWT cookie when no user
           await axiosSecure.post('/logout');
         } catch (error) {
           console.error('Error clearing cookie:', error);

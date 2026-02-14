@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { api } from "../../../api/axiosSecure";
 import Swal from 'sweetalert2';
 import Loading from '../../../Componentes/Loading';
 
@@ -14,7 +14,7 @@ const ManageUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_API}/users`);
+      const res = await api.get('/users'); // ✅ relative path, base URL handled by api
       setUsers(res.data.data);
     } catch (err) {
       console.error(err);
@@ -26,13 +26,9 @@ const ManageUsers = () => {
 
   const handleMakeFraud = async (userId) => {
     try {
-      await axios.patch(
-        `${import.meta.env.VITE_BACKEND_API}
-/users/${userId}/status`,
-        {
-          status: 'fraud',
-        }
-      );
+      await api.patch(`/users/${userId}/status`, {
+        status: 'fraud',
+      });
       Swal.fire('Success', 'User marked as fraud!', 'success');
       fetchUsers();
     } catch (err) {

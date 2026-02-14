@@ -9,18 +9,16 @@ import toast, { Toaster } from 'react-hot-toast';
 import { Helmet } from 'react-helmet';
 import { doc, setDoc } from 'firebase/firestore';
 import axios from 'axios';
-import { useForm } from 'react-hook-form';               // ✅ added
+import { useForm } from 'react-hook-form';
 
 const SignUp = () => {
   const navigate = useNavigate();
   const { createUser, signInWithGoogle } = useContext(AuthContext);
 
-  // local state for file and UI helpers
   const [profileFile, setProfileFile] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ react-hook-form setup
   const {
     register,
     handleSubmit,
@@ -30,13 +28,11 @@ const SignUp = () => {
 
   const handleToggle = () => setShowPassword(!showPassword);
 
-  // ✅ new onSubmit – receives form data
   const onSubmit = async (data) => {
     setLoading(true);
 
     const { email, name, address, password, confirmPassword } = data;
 
-    // ---------- validations that are not handled by register ----------
     if (!profileFile) {
       setLoading(false);
       return toast.error('Please upload a profile image.');
@@ -63,7 +59,7 @@ const SignUp = () => {
     }
 
     try {
-      // upload image to imgbb
+      // Upload image to imgbb
       const formData = new FormData();
       formData.append('image', profileFile);
 
@@ -73,16 +69,27 @@ const SignUp = () => {
       );
       const profileImg = uploadRes.data.data.display_url;
 
-      // create firebase user
+      // Create Firebase user
       const userCredential = await createUser(email, password);
 
-      // update profile with name and photo
+      // Update Firebase profile with name and photo
       await updateProfile(userCredential.user, {
         displayName: name,
         photoURL: profileImg,
       });
 
-      // save to backend
+      // ========== ADDED: JWT token request (optional) ==========
+      try {
+        await axios.post(`${import.meta.env.VITE_BACKEND_API}/jwt`, {
+          email: userCredential.user.email,
+        });
+      } catch (jwtError) {
+        console.error('JWT creation failed (optional):', jwtError);
+        // Do not block signup if JWT fails – it's optional
+      }
+      // ========================================================
+
+      // Save user to backend (your custom API)
       const userData = {
         email,
         name,
@@ -94,10 +101,9 @@ const SignUp = () => {
         uid: userCredential.user.uid,
         createdAt: new Date().toISOString(),
       };
-
       await axios.post(`${import.meta.env.VITE_BACKEND_API}/users`, userData);
 
-      // save to firestore
+      // Save user to Firestore
       await setDoc(doc(db, 'users', userCredential.user.uid), {
         name,
         email,
@@ -110,8 +116,8 @@ const SignUp = () => {
       });
 
       toast.success('Account created successfully!');
-      reset();               // ✅ clear form
-      setProfileFile(null);  // clear file input
+      reset();
+      setProfileFile(null);
       setTimeout(() => navigate('/'), 500);
     } catch (error) {
       console.error('Sign-up error:', error);
@@ -198,7 +204,6 @@ const SignUp = () => {
             Create Your Account
           </h2>
 
-          {/* Google Sign Up Button */}
           <button
             onClick={handleGoogleSignUp}
             disabled={loading}
@@ -210,16 +215,13 @@ const SignUp = () => {
             </span>
           </button>
 
-          {/* Divider */}
           <div className="flex items-center my-6">
             <div className="flex-1 border-t border-gray-300"></div>
             <span className="px-4 text-gray-500 text-sm">OR</span>
             <div className="flex-1 border-t border-gray-300"></div>
           </div>
 
-          {/* ✅ form with handleSubmit */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Name */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Name</label>
               <input
@@ -233,7 +235,6 @@ const SignUp = () => {
               )}
             </div>
 
-            {/* Profile Image (kept separate because it's a file) */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Profile Image</label>
               <input
@@ -244,7 +245,6 @@ const SignUp = () => {
               />
             </div>
 
-            {/* Address */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Address</label>
               <input
@@ -258,7 +258,6 @@ const SignUp = () => {
               )}
             </div>
 
-            {/* Email */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Email</label>
               <input
@@ -278,7 +277,6 @@ const SignUp = () => {
               )}
             </div>
 
-            {/* Password */}
             <div className="flex flex-col relative">
               <label className="font-medium mb-1">Password</label>
               <input
@@ -299,7 +297,6 @@ const SignUp = () => {
               )}
             </div>
 
-            {/* Confirm Password */}
             <div className="flex flex-col">
               <label className="font-medium mb-1">Confirm Password</label>
               <input

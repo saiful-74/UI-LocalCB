@@ -2,15 +2,15 @@ import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../../../Context/AuthContext';
 import Swal from 'sweetalert2';
 import Loading from '../../../Componentes/Loading';
-import { useForm } from 'react-hook-form'; // ✅ added
+import { useForm } from 'react-hook-form';
+import { api } from '../../../api/axiosSecure'; // ✅ axios instance import
 
 const MyMeals = () => {
   const { user } = useContext(AuthContext);
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMeal, setSelectedMeal] = useState(null); // for modal open/close
+  const [selectedMeal, setSelectedMeal] = useState(null);
 
-  // ✅ react-hook-form for the modal
   const {
     register,
     handleSubmit,
@@ -18,10 +18,8 @@ const MyMeals = () => {
     formState: { errors },
   } = useForm();
 
-  // Reset form when selectedMeal changes (modal opens with different meal)
   useEffect(() => {
     if (selectedMeal) {
-      // Prepare data: ingredients array -> comma-separated string for input
       const defaultValues = {
         foodName: selectedMeal.foodName || '',
         foodImage: selectedMeal.foodImage || '',
@@ -46,22 +44,26 @@ const MyMeals = () => {
   };
 
   useEffect(() => {
-    if (!user?.email) return;
-
-    fetch(`${import.meta.env.VITE_BACKEND_API}/user-meals/${user.email}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          const normalized = data.data.map((m) => normalizeId(m));
+    const fetchMeals = async () => {
+      if (!user?.email) return;
+      try {
+        const res = await api.get(`/user-meals/${user.email}`); // ✅ replaced fetch
+        if (res.data.success) {
+          const normalized = res.data.data.map((m) => normalizeId(m));
           setMeals(normalized);
         }
-      })
-      .catch((err) => console.log(err))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.log(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMeals();
   }, [user?.email]);
 
-  const handleDelete = (id) => {
-    Swal.fire({
+  const handleDelete = async (id) => {
+    const result = await Swal.fire({
       title: 'Are you sure?',
       text: 'This meal will be deleted permanently!',
       icon: 'warning',
@@ -69,20 +71,18 @@ const MyMeals = () => {
       confirmButtonColor: '#d33',
       cancelButtonColor: '#3085d6',
       confirmButtonText: 'Yes, delete it!',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        fetch(`${import.meta.env.VITE_BACKEND_API}/meals/${id}`, {
-          method: 'DELETE',
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success) {
-              Swal.fire('Deleted!', 'Meal has been deleted.', 'success');
-              setMeals((prev) => prev.filter((meal) => meal._id !== id));
-            }
-          });
-      }
     });
+
+    if (result.isConfirmed) {
+      try {
+        await api.delete(`/meals/${id}`); // ✅ replaced fetch
+        Swal.fire('Deleted!', 'Meal has been deleted.', 'success');
+        setMeals((prev) => prev.filter((meal) => meal._id !== id));
+      } catch (err) {
+        console.error('Delete failed:', err);
+        Swal.fire('Error', 'Failed to delete meal.', 'error');
+      }
+    }
   };
 
   const handleOpenModal = (meal) => {
@@ -92,17 +92,15 @@ const MyMeals = () => {
 
   const handleCloseModal = () => {
     setSelectedMeal(null);
-    reset(); // optional: clear form
+    reset();
   };
 
-  // ✅ onSubmit – receives form data from react-hook-form
   const onUpdate = async (data) => {
     if (!selectedMeal || !selectedMeal._id) {
       Swal.fire('Error', 'No meal selected or missing id', 'error');
       return;
     }
 
-    // Convert ingredients string back to array
     const ingredientsArray = data.ingredients
       ? data.ingredients.split(',').map((item) => item.trim())
       : [];
@@ -120,24 +118,18 @@ const MyMeals = () => {
     const optimisticMeal = {
       ...selectedMeal,
       ...payload,
-      _id: selectedMeal._id, // ensure _id is kept
+      _id: selectedMeal._id,
     };
     setMeals((prev) =>
       prev.map((m) => (m._id === optimisticMeal._id ? optimisticMeal : m))
     );
-    setSelectedMeal(null); // close modal
+    setSelectedMeal(null);
     Swal.fire('Updated!', 'Meal has been updated.', 'success');
 
     // Background server update
     try {
       const id = encodeURIComponent(String(selectedMeal._id).trim());
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_API}/meals/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const responseData = await res.json();
-      console.log('Background PUT response:', res.status, responseData);
+      await api.put(`/meals/${id}`, payload); // ✅ replaced fetch
     } catch (err) {
       console.error('Background update failed:', err);
       Swal.fire(
@@ -154,7 +146,6 @@ const MyMeals = () => {
     <div className="min-h-screen bg-white p-6">
       <title>LocalChefBazaar || My Meals</title>
 
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">My Meals ({meals.length})</h1>
         <p>Manage and update your added meals</p>
@@ -248,14 +239,11 @@ const MyMeals = () => {
           </div>
         )}
 
-        {/* Update Modal */}
         {selectedMeal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
             <div className="bg-white p-6 rounded-xl w-96 relative">
               <h3 className="text-xl font-bold mb-4">Update Meal</h3>
-              {/* ✅ form with handleSubmit */}
               <form onSubmit={handleSubmit(onUpdate)} className="space-y-3">
-                {/* Food Name */}
                 <div>
                   <input
                     type="text"
@@ -268,7 +256,6 @@ const MyMeals = () => {
                   )}
                 </div>
 
-                {/* Food Image URL */}
                 <div>
                   <input
                     type="url"
@@ -281,7 +268,6 @@ const MyMeals = () => {
                   )}
                 </div>
 
-                {/* Price */}
                 <div>
                   <input
                     type="number"
@@ -298,7 +284,6 @@ const MyMeals = () => {
                   )}
                 </div>
 
-                {/* Rating */}
                 <div>
                   <input
                     type="number"
@@ -318,7 +303,6 @@ const MyMeals = () => {
                   )}
                 </div>
 
-                {/* Ingredients (comma separated) */}
                 <div>
                   <input
                     type="text"
@@ -336,7 +320,6 @@ const MyMeals = () => {
                   )}
                 </div>
 
-                {/* Estimated Delivery Time */}
                 <div>
                   <input
                     type="number"
