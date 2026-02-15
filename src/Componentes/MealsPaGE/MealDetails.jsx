@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { motion } from 'framer-motion';
@@ -21,6 +20,7 @@ import {
   FiShare2,
   FiEye
 } from 'react-icons/fi';
+import { api } from "../../api/axiosSecure"; // ✅ (A) axios → api
 
 const MealDetails = () => {
   const { id } = useParams();
@@ -56,7 +56,7 @@ const MealDetails = () => {
   const fetchMealDetails = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_API}/mealsd/${id}`);
+      const res = await api.get(`/mealsd/${id}`); // ✅ using api
       setMeal(res.data);
     } catch (err) {
       console.log(err);
@@ -66,10 +66,11 @@ const MealDetails = () => {
     }
   };
 
+  // ✅ (B) fetchReviews() replaced
   const fetchReviews = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_API}/reviews/${id}`);
-      setReviews(Array.isArray(res.data) ? res.data : res.data?.data || []);
+      const res = await api.get(`/reviews?foodId=${id}`); // matches PART A
+      setReviews(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.log(err);
     }
@@ -77,7 +78,7 @@ const MealDetails = () => {
 
   const fetchRelatedMeals = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_BACKEND_API}/meals?limit=4`);
+      const res = await api.get(`/meals?limit=4`); // ✅ using api
       if (res.data.success) {
         setRelatedMeals(res.data.data.filter(m => m._id !== id).slice(0, 4));
       }
@@ -98,6 +99,7 @@ const MealDetails = () => {
 
     setReviewLoading(true);
 
+    // ✅ (D) reviewerEmail line removed – backend sets it from token
     const newReview = {
       foodId: id,
       mealName: meal.foodName,
@@ -106,11 +108,11 @@ const MealDetails = () => {
       rating: Number(reviewData.rating),
       comment: reviewData.comment,
       date: new Date().toISOString(),
-      reviewerEmail: user?.email || '',
     };
 
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_API}/reviews`, newReview);
+      // ✅ (C) axios.post → api.post
+      await api.post(`/reviews`, newReview);
       toast.success('Review added successfully!');
       setReviewData({ rating: 0, comment: '' });
       fetchReviews();
@@ -140,7 +142,7 @@ const MealDetails = () => {
     };
 
     try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_API}/favorites`, favData);
+      await api.post(`/favorites`, favData); // ✅ using api
       toast.success('Added to favorites!');
     } catch {
       toast.error('Failed to add to favorites');

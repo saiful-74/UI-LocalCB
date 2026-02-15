@@ -1,11 +1,11 @@
 import { useEffect, useState, useContext } from 'react';
 import ReactDOM from 'react-dom';
-import axios from 'axios';
 import { AuthContext } from '../../../Context/AuthContext';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import Loading from '../../../Componentes/Loading';
-import { useForm } from 'react-hook-form'; // ✅ added
+import { useForm } from 'react-hook-form';
+import { api } from '../../../api/axiosSecure'; // ✅ secure axios instance
 
 const Modal = ({ children, onClose }) => {
   if (typeof document === 'undefined') return null;
@@ -35,7 +35,6 @@ const MyReviews = () => {
   const [editingReview, setEditingReview] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // ✅ react-hook-form for the modal
   const {
     register,
     handleSubmit,
@@ -72,7 +71,7 @@ const MyReviews = () => {
   const closeModal = () => {
     setEditingReview(null);
     setIsUpdating(false);
-    reset(); // clear form
+    reset();
   };
 
   useEffect(() => {
@@ -83,18 +82,15 @@ const MyReviews = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [editingReview]);
 
+  // ✅ Fetch reviews using secure api instance
   useEffect(() => {
     let mounted = true;
     if (user?.email) {
-      axios
-        .get(
-          `${
-            import.meta.env.VITE_BACKEND_API
-          }/user-reviews/${encodeURIComponent(user.email)}`
-        )
+      api
+        .get('/my-reviews') // 🔥 fixed endpoint
         .then((res) => {
           if (!mounted) return;
-          const data = res.data?.data || [];
+          const data = res.data || []; // assuming data is the array directly
           const normalized = data.map((r) => normalizeReview(r));
           setReviews(normalized);
         })
@@ -124,9 +120,7 @@ const MyReviews = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await axios.delete(
-        `${import.meta.env.VITE_BACKEND_API}/reviews/${encodeURIComponent(id)}`
-      );
+      await api.delete(`/reviews/${encodeURIComponent(id)}`); // ✅ secure delete
       setReviews((prev) => prev.filter((r) => String(r._id) !== String(id)));
       toast.success('Review deleted successfully!');
     } catch (err) {
@@ -140,7 +134,6 @@ const MyReviews = () => {
     setEditingReview(normalized);
   };
 
-  // ✅ onSubmit – receives form data from react-hook-form
   const onUpdate = async (data) => {
     if (!editingReview) return;
 
@@ -169,10 +162,8 @@ const MyReviews = () => {
     const original = reviews.find((r) => String(r._id) === reviewId);
 
     try {
-      const res = await axios.patch(
-        `${import.meta.env.VITE_BACKEND_API}/reviewsup/${encodeURIComponent(
-          reviewId
-        )}`,
+      const res = await api.patch(
+        `/reviewsup/${encodeURIComponent(reviewId)}`, // ✅ secure patch
         payload
       );
 
@@ -223,7 +214,6 @@ const MyReviews = () => {
     <div className="min-h-screen bg-white p-6">
       <title>LocalChefBazaar || My Reviews</title>
 
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">My Reviews</h1>
         <p className="text-gray-600">Manage and edit your meal reviews</p>
@@ -377,7 +367,6 @@ const MyReviews = () => {
             </p>
           </div>
 
-          {/* ✅ form with handleSubmit */}
           <form onSubmit={handleSubmit(onUpdate)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
