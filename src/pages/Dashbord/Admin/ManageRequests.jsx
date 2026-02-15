@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
-
-const apiBase = import.meta.env.VITE_BACKEND_API;
+import { api } from "../../../api/axiosSecure";
 
 const ManageRequests = () => {
   const [requests, setRequests] = useState([]);
@@ -13,7 +11,7 @@ const ManageRequests = () => {
     const fetchRequests = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${apiBase}/role-requests`);
+        const res = await api.get(`/role-requests`);
         setRequests(res.data?.data || []);
       } catch (err) {
         console.error(err);
@@ -41,7 +39,7 @@ const ManageRequests = () => {
   const handleApprove = async (id, t) => {
     startProcessing(id);
     try {
-      const res = await axios.patch(`${apiBase}/role-requests/${id}/approve`);
+      const res = await api.patch(`/role-requests/${id}/approve`);
       setRequests((prev) => prev.filter((r) => r._id !== id));
       toast.success(res.data?.message || 'Request approved', { position: 'top-center' });
     } catch (err) {
@@ -56,7 +54,7 @@ const ManageRequests = () => {
   const handleDecline = async (id, t) => {
     startProcessing(id);
     try {
-      const res = await axios.patch(`${apiBase}/role-requests/${id}/decline`);
+      const res = await api.patch(`/role-requests/${id}/decline`);
       setRequests((prev) => prev.filter((r) => r._id !== id));
       toast.success(res.data?.message || 'Request declined', { position: 'top-center' });
     } catch (err) {
