@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../../../../api/axiosSecure';
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -18,9 +18,7 @@ const PaymentSuccess = () => {
 
     const verifyPayment = async () => {
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_API}/verify-payment/${sessionId}`
-        );
+        const res = await api.get(`/verify-payment/${sessionId}`);
 
         if (res.data.success) {
           setMessage('Payment Successful! 🎉');

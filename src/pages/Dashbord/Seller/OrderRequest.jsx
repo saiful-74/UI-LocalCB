@@ -1,71 +1,75 @@
 import React, { useEffect, useState, useContext } from 'react';
-import axios from 'axios';
 import { AuthContext } from '../../../Context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import Loading from '../../../Componentes/Loading';
+import { api } from '../../../api/axiosSecure'; // ✅ import the secure axios instance
 
 const OrderRequest = () => {
   const { user } = useContext(AuthContext);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // ✅ Define fetchOrders so we can reuse it
+  const fetchOrders = async () => {
     if (!user?.email) return;
-
-    const fetchOrders = async () => {
-      setLoading(true);
-      try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_API}
-/user-chef-orders/${user.email}`
-        );
-
-        if (res.data.success) {
-          const sortedOrders = res.data.data.sort((a, b) => {
-            if (a.orderStatus === 'pending' && b.orderStatus !== 'pending')
-              return -1;
-            if (a.orderStatus !== 'pending' && b.orderStatus === 'pending')
-              return 1;
-            return 0;
-          });
-
-          setOrders(sortedOrders);
-        } else {
-          toast.error(res.data.message || 'Failed to load orders');
-        }
-      } catch (error) {
-        console.error(error);
-        toast.error('Server Error!');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [user?.email]);
-
-  const handleStatusUpdate = async (orderId, newStatus) => {
+    setLoading(true);
     try {
-      const res = await axios.patch(
-        `${import.meta.env.VITE_BACKEND_API}
-/update-order-status/${orderId}`,
-        { orderStatus: newStatus }
-      );
-
+      const res = await api.get(`/user-chef-orders/${user.email}`);
       if (res.data.success) {
-        toast.success(`Order ${newStatus} successfully`);
-
-        setOrders((prev) =>
-          prev.map((order) =>
-            order._id === orderId ? { ...order, orderStatus: newStatus } : order
-          )
-        );
+        const sortedOrders = res.data.data.sort((a, b) => {
+          if (a.orderStatus === 'pending' && b.orderStatus !== 'pending') return -1;
+          if (a.orderStatus !== 'pending' && b.orderStatus === 'pending') return 1;
+          return 0;
+        });
+        setOrders(sortedOrders);
       } else {
-        toast.error('Failed to update status');
+        toast.error(res.data.message || 'Failed to load orders');
       }
     } catch (error) {
       console.error(error);
-      toast.error('Server error!');
+      toast.error('Server Error!');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, [user?.email]);
+
+  // ✅ Separate handler for Accept
+  const handleAccept = async (orderId) => {
+    try {
+      await api.patch(`/orders/accept/${orderId}`);
+      toast.success('Order accepted!');
+      fetchOrders(); // refresh list
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to accept order');
+    }
+  };
+
+  // ✅ Separate handler for Cancel
+  const handleCancel = async (orderId) => {
+    try {
+      await api.patch(`/orders/cancel/${orderId}`);
+      toast.success('Order cancelled!');
+      fetchOrders();
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to cancel order');
+    }
+  };
+
+  // ✅ Separate handler for Deliver
+  const handleDeliver = async (orderId) => {
+    try {
+      await api.patch(`/orders/deliver/${orderId}`);
+      toast.success('Order delivered!');
+      fetchOrders();
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to mark as delivered');
     }
   };
 
@@ -123,11 +127,11 @@ const OrderRequest = () => {
 
               <div className="mt-4 flex flex-col sm:flex-row gap-2">
                 <button
-                  onClick={() => handleStatusUpdate(order._id, 'cancelled')}
+                  onClick={() => handleCancel(order._id)}
                   disabled={!isPending}
-                  className={`px-3 py-2 rounded text-white w-full sm:w-auto  ${
+                  className={`px-3 py-2 rounded text-white w-full sm:w-auto ${
                     isPending
-                      ? 'bg-red-600 cursor-pointer'
+                      ? 'bg-red-600 hover:bg-red-700 cursor-pointer'
                       : 'bg-gray-400 cursor-not-allowed'
                   }`}
                 >
@@ -135,11 +139,11 @@ const OrderRequest = () => {
                 </button>
 
                 <button
-                  onClick={() => handleStatusUpdate(order._id, 'accepted')}
+                  onClick={() => handleAccept(order._id)}
                   disabled={!isPending}
-                  className={`px-3 py-2 rounded text-white w-full sm:w-auto  ${
+                  className={`px-3 py-2 rounded text-white w-full sm:w-auto ${
                     isPending
-                      ? 'bg-green-600 cursor-pointer'
+                      ? 'bg-green-600 hover:bg-green-700 cursor-pointer'
                       : 'bg-gray-400 cursor-not-allowed'
                   }`}
                 >
@@ -147,11 +151,11 @@ const OrderRequest = () => {
                 </button>
 
                 <button
-                  onClick={() => handleStatusUpdate(order._id, 'delivered')}
+                  onClick={() => handleDeliver(order._id)}
                   disabled={!isAccepted}
-                  className={`px-3 py-2 rounded text-white w-full sm:w-auto  ${
+                  className={`px-3 py-2 rounded text-white w-full sm:w-auto ${
                     isAccepted
-                      ? 'bg-blue-600 cursor-pointer'
+                      ? 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
                       : 'bg-gray-400 cursor-not-allowed'
                   }`}
                 >

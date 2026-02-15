@@ -16,7 +16,6 @@ const MyOrders = () => {
       setLoading(true);
       try {
         const res = await api.get(`/orders/${user.email}`);
-
         if (res.data.success) {
           setOrders(res.data.data);
         } else {
@@ -34,23 +33,20 @@ const MyOrders = () => {
     fetchOrders();
   }, [user?.email]);
 
+  // ✅ সরলীকৃত handlePay – শুধু orderId পাঠায়
   const handlePay = async (order) => {
     try {
-      const res = await api.post(`/create-checkout-session`, {
+      const res = await api.post('/create-checkout-session', {
         orderId: order._id,
-        amount: order.totalPrice,
-        email: user.email,
-        name: order.mealName || 'Customer',
       });
-
       if (res.data.url) {
-        window.location.href = res.data.url;
+        window.location.href = res.data.url; // Stripe পেজে রিডিরেক্ট
       } else {
         toast.error('Payment initiation failed');
       }
     } catch (err) {
       console.error(err);
-      toast.error('Payment error! Please try again.');
+      toast.error(err?.response?.data?.error || 'Payment error! Please try again.');
     }
   };
 
@@ -66,15 +62,10 @@ const MyOrders = () => {
     <div className="min-h-screen bg-white p-6">
       <title>LocalChefBazaar || My Orders</title>
       <Toaster />
-      
-      {/* Header */}
+
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          My Orders
-        </h1>
-        <p className="text-gray-600">
-          Track and manage your meal orders
-        </p>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">My Orders</h1>
+        <p className="text-gray-600">Track and manage your meal orders</p>
       </div>
 
       <div className="max-w-6xl mx-auto">
@@ -102,13 +93,15 @@ const MyOrders = () => {
                 >
                   <div className="mb-4">
                     <h2 className="text-xl font-bold text-gray-800 mb-2">{order.mealName}</h2>
-                    <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      isPaid 
-                        ? 'bg-green-100 text-green-800' 
-                        : order.paymentStatus?.toLowerCase() === 'pending'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
+                    <div
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        isPaid
+                          ? 'bg-green-100 text-green-800'
+                          : order.paymentStatus?.toLowerCase() === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}
+                    >
                       {order.paymentStatus}
                     </div>
                   </div>
@@ -118,32 +111,33 @@ const MyOrders = () => {
                       <span className="text-sm font-medium text-gray-600">Chef:</span>
                       <span className="text-sm text-gray-800">{order.chefName}</span>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-sm font-medium text-gray-600">Price:</span>
                       <span className="text-sm text-gray-800">${order.price}</span>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-sm font-medium text-gray-600">Quantity:</span>
                       <span className="text-sm text-gray-800">{order.quantity}</span>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-sm font-medium text-gray-600">Total:</span>
                       <span className="text-sm font-semibold text-gray-800">${order.totalPrice}</span>
                     </div>
-
                     <div className="flex justify-between">
                       <span className="text-sm font-medium text-gray-600">Status:</span>
                       <span className="text-sm text-gray-800">{order.orderStatus}</span>
+                    </div>
+
+                    {/* ✅ Step 4: Payment Status দেখানোর জন্য নতুন লাইন (ঠিক এখানে) */}
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-600">Payment:</span>
+                      <span className="text-sm text-gray-800">{order.paymentStatus || "Pending"}</span>
                     </div>
 
                     <div className="flex justify-between">
                       <span className="text-sm font-medium text-gray-600">Delivery:</span>
                       <span className="text-sm text-gray-800">{order.deliveryTime}</span>
                     </div>
-
                     {order.userAddress && (
                       <div className="pt-2 border-t border-gray-200">
                         <span className="text-sm font-medium text-gray-600">Address:</span>
@@ -152,6 +146,7 @@ const MyOrders = () => {
                     )}
                   </div>
 
+                  {/* ✅ Pay Now button – শুধু Accepted + Pending দেখালেই */}
                   {order.orderStatus === 'accepted' &&
                     order.paymentStatus?.toLowerCase() === 'pending' && (
                       <button
