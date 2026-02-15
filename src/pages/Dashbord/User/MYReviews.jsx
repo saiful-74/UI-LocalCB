@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import Loading from '../../../Componentes/Loading';
 import { useForm } from 'react-hook-form';
-import { api } from '../../../api/axiosSecure'; // ✅ secure axios instance
+import { api } from '../../../api/axiosSecure';
 
 const Modal = ({ children, onClose }) => {
   if (typeof document === 'undefined') return null;
@@ -42,7 +42,6 @@ const MyReviews = () => {
     formState: { errors },
   } = useForm();
 
-  // Reset form when a new review is selected for editing
   useEffect(() => {
     if (editingReview) {
       reset({
@@ -82,16 +81,26 @@ const MyReviews = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [editingReview]);
 
-  // ✅ Fetch reviews using secure api instance
+  // ✅ FIXED: Safely extract array from API response
   useEffect(() => {
     let mounted = true;
     if (user?.email) {
       api
-        .get('/my-reviews') // 🔥 fixed endpoint
+        .get('/my-reviews')
         .then((res) => {
           if (!mounted) return;
-          const data = res.data || []; // assuming data is the array directly
-          const normalized = data.map((r) => normalizeReview(r));
+
+          // Try to get an array from different possible response structures
+          let dataArray = [];
+          if (Array.isArray(res.data)) {
+            dataArray = res.data;
+          } else if (res.data && Array.isArray(res.data.reviews)) {
+            dataArray = res.data.reviews; // if response is { reviews: [...] }
+          } else if (res.data && res.data.data && Array.isArray(res.data.data)) {
+            dataArray = res.data.data; // common pagination wrapper
+          }
+
+          const normalized = dataArray.map((r) => normalizeReview(r));
           setReviews(normalized);
         })
         .catch((err) => {
@@ -120,7 +129,7 @@ const MyReviews = () => {
     if (!result.isConfirmed) return;
 
     try {
-      await api.delete(`/reviews/${encodeURIComponent(id)}`); // ✅ secure delete
+      await api.delete(`/reviews/${encodeURIComponent(id)}`);
       setReviews((prev) => prev.filter((r) => String(r._id) !== String(id)));
       toast.success('Review deleted successfully!');
     } catch (err) {
@@ -163,7 +172,7 @@ const MyReviews = () => {
 
     try {
       const res = await api.patch(
-        `/reviewsup/${encodeURIComponent(reviewId)}`, // ✅ secure patch
+        `/reviewsup/${encodeURIComponent(reviewId)}`,
         payload
       );
 

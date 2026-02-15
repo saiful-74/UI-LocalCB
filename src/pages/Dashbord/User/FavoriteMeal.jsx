@@ -1,8 +1,8 @@
-import axios from 'axios';
+import { useContext, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { AuthContext } from '../../../Context/AuthContext';
-import { useContext, useEffect, useState } from 'react';
+import { api } from '../../../api/axiosSecure'; // ✅ axiosSecure import
 import Loading from '../../../Componentes/Loading';
 
 const FavoriteMeal = () => {
@@ -18,13 +18,15 @@ const FavoriteMeal = () => {
 
   useEffect(() => {
     if (user?.email) {
-      axios
-        .get(`${import.meta.env.VITE_BACKEND_API}/favorites/${user.email}`)
+      // ✅ পরিবর্তিত অংশ: /favorites/:email এর পরিবর্তে /my-favorites
+      api
+        .get('/my-favorites')
         .then((res) => {
-          if (res.data.success) {
-            setFavorites(res.data.data);
-            calculateTotal(res.data.data);
-          }
+          // ধরে নিচ্ছি ব্যাকএন্ড থেকে ডাটা array আকারে আসছে
+          // যদি res.data.success স্ট্রাকচার থাকে তবে সেটা ব্যবহার করুন, নিচের মত করে অ্যাডজাস্ট করুন
+          const data = Array.isArray(res.data) ? res.data : res.data.data || [];
+          setFavorites(data);
+          calculateTotal(data);
           setLoading(false);
         })
         .catch((err) => {
@@ -46,8 +48,9 @@ const FavoriteMeal = () => {
       confirmButtonText: 'Yes, delete it!',
     }).then((result) => {
       if (result.isConfirmed) {
-        axios
-          .delete(`${import.meta.env.VITE_BACKEND_API}/favorites/${id}`)
+        // ✅ ডিলিটেও api ব্যবহার করা ভালো
+        api
+          .delete(`/favorites/${id}`)
           .then((res) => {
             if (res.data.success) {
               const updatedFavorites = favorites.filter(
@@ -65,12 +68,13 @@ const FavoriteMeal = () => {
       }
     });
   };
+
   if (loading) return <Loading />;
 
   return (
     <div className="min-h-screen bg-white p-6">
       <title>LocalChefBazaar || Favorite Meals</title>
-      
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
@@ -85,12 +89,26 @@ const FavoriteMeal = () => {
         {favorites.length === 0 ? (
           <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 text-center">
             <div className="text-gray-400 mb-4">
-              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              <svg
+                className="w-16 h-16 mx-auto"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">No Favorite Meals Yet</h3>
-            <p className="text-gray-600">Start exploring meals and add them to your favorites!</p>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              No Favorite Meals Yet
+            </h3>
+            <p className="text-gray-600">
+              Start exploring meals and add them to your favorites!
+            </p>
           </div>
         ) : (
           <>
@@ -124,13 +142,25 @@ const FavoriteMeal = () => {
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-12 w-12">
                               <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                <svg
+                                  className="w-6 h-6 text-orange-600"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                  />
                                 </svg>
                               </div>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{fav.mealName}</div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {fav.mealName}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -138,13 +168,15 @@ const FavoriteMeal = () => {
                           <div className="text-sm text-gray-900">{fav.chefName}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">${fav.price?.toFixed(2)}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            ${fav.price?.toFixed(2)}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {new Date(fav.addedTime).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'short',
-                            day: 'numeric'
+                            day: 'numeric',
                           })}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -152,8 +184,18 @@ const FavoriteMeal = () => {
                             onClick={() => handleDelete(fav._id)}
                             className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
                           >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            <svg
+                              className="w-4 h-4 mr-1"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
                             </svg>
                             Remove
                           </button>
@@ -176,20 +218,34 @@ const FavoriteMeal = () => {
                     <div className="flex-1">
                       <div className="flex items-center mb-3">
                         <div className="flex-shrink-0 h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
-                          <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          <svg
+                            className="w-6 h-6 text-orange-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                            />
                           </svg>
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-800">{fav.mealName}</h3>
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            {fav.mealName}
+                          </h3>
                           <p className="text-sm text-gray-600">by {fav.chefName}</p>
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4 mb-4">
                         <div>
                           <p className="text-sm font-medium text-gray-600">Price</p>
-                          <p className="text-lg font-semibold text-gray-800">${fav.price?.toFixed(2)}</p>
+                          <p className="text-lg font-semibold text-gray-800">
+                            ${fav.price?.toFixed(2)}
+                          </p>
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-600">Date Added</p>
@@ -197,21 +253,31 @@ const FavoriteMeal = () => {
                             {new Date(fav.addedTime).toLocaleDateString('en-US', {
                               year: 'numeric',
                               month: 'short',
-                              day: 'numeric'
+                              day: 'numeric',
                             })}
                           </p>
                         </div>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-end">
                     <button
                       onClick={() => handleDelete(fav._id)}
                       className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors cursor-pointer"
                     >
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
                       </svg>
                       Remove from Favorites
                     </button>
@@ -225,7 +291,9 @@ const FavoriteMeal = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800">Total Summary</h3>
-                  <p className="text-sm text-gray-600">{favorites.length} favorite meal{favorites.length !== 1 ? 's' : ''}</p>
+                  <p className="text-sm text-gray-600">
+                    {favorites.length} favorite meal{favorites.length !== 1 ? 's' : ''}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-600">Total Value</p>

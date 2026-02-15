@@ -25,7 +25,7 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
-import axios from 'axios';
+import { api } from '../../../api/axiosSecure';
 import Loading from '../../../Componentes/Loading';
 
 // Register Chart.js components
@@ -49,53 +49,31 @@ const DashboardOverview = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user?.email) return;
-      
+
       try {
         setLoading(true);
-        
-        // Fetch different data based on role
-        const endpoints = {
-          user: [
-            `${import.meta.env.VITE_BACKEND_API}/orders/${user.email}`,
-            `${import.meta.env.VITE_BACKEND_API}/favorites/${user.email}`,
-            `${import.meta.env.VITE_BACKEND_API}/reviews/${user.email}`
-          ],
-          chef: [
-            `${import.meta.env.VITE_BACKEND_API}/chef-meals/${user.email}`,
-            `${import.meta.env.VITE_BACKEND_API}/chef-orders/${user.email}`,
-            `${import.meta.env.VITE_BACKEND_API}/chef-analytics/${user.email}`
-          ],
-          admin: [
-            `${import.meta.env.VITE_BACKEND_API}/admin-stats`,
-            `${import.meta.env.VITE_BACKEND_API}/all-users`,
-            `${import.meta.env.VITE_BACKEND_API}/all-orders`
-          ],
-          manager: [
-            `${import.meta.env.VITE_BACKEND_API}/manager-stats`,
-            `${import.meta.env.VITE_BACKEND_API}/all-users`,
-            `${import.meta.env.VITE_BACKEND_API}/pending-requests`
-          ]
-        };
 
-        const roleEndpoints = endpoints[role] || endpoints.user;
-        
-        // Fetch all data concurrently with error handling
-        const responses = await Promise.allSettled(
-          roleEndpoints.map(url => axios.get(url).catch(() => ({ data: { data: [] } })))
-        );
-        
-        const data = responses.map(response => 
-          response.status === 'fulfilled' ? response.value.data : { data: [] }
-        );
+        if (role === "user") {
+          const [ordersRes, favRes, reviewRes] = await Promise.all([
+            api.get("/my-orders"),
+            api.get("/my-favorites"),
+            api.get("/my-reviews"),
+          ]);
 
-        setDashboardData({
-          primary: data[0]?.data || [],
-          secondary: data[1]?.data || [],
-          tertiary: data[2]?.data || []
-        });
+          setDashboardData({
+            primary: ordersRes.data.data || [],
+            secondary: favRes.data.data || [],
+            tertiary: reviewRes.data.data || [],
+          });
+        }
+
       } catch (error) {
-        console.error('Dashboard data fetch error:', error);
-        setDashboardData({ primary: [], secondary: [], tertiary: [] });
+        console.error("Dashboard error:", error);
+        setDashboardData({
+          primary: [],
+          secondary: [],
+          tertiary: [],
+        });
       } finally {
         setLoading(false);
       }

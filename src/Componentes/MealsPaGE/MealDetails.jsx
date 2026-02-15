@@ -20,7 +20,7 @@ import {
   FiShare2,
   FiEye
 } from 'react-icons/fi';
-import { api } from "../../api/axiosSecure"; // ✅ (A) axios → api
+import { api } from "../../api/axiosSecure"; // ✅ axiosSecure with credentials
 
 const MealDetails = () => {
   const { id } = useParams();
@@ -51,12 +51,12 @@ const MealDetails = () => {
     fetchMealDetails();
     fetchReviews();
     fetchRelatedMeals();
-  }, [id]); // Only depend on id to avoid infinite loops
+  }, [id]);
 
   const fetchMealDetails = async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/mealsd/${id}`); // ✅ using api
+      const res = await api.get(`/mealsd/${id}`);
       setMeal(res.data);
     } catch (err) {
       console.log(err);
@@ -66,10 +66,9 @@ const MealDetails = () => {
     }
   };
 
-  // ✅ (B) fetchReviews() replaced
   const fetchReviews = async () => {
     try {
-      const res = await api.get(`/reviews?foodId=${id}`); // matches PART A
+      const res = await api.get(`/reviews?foodId=${id}`);
       setReviews(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.log(err);
@@ -78,7 +77,7 @@ const MealDetails = () => {
 
   const fetchRelatedMeals = async () => {
     try {
-      const res = await api.get(`/meals?limit=4`); // ✅ using api
+      const res = await api.get(`/meals?limit=4`);
       if (res.data.success) {
         setRelatedMeals(res.data.data.filter(m => m._id !== id).slice(0, 4));
       }
@@ -99,7 +98,6 @@ const MealDetails = () => {
 
     setReviewLoading(true);
 
-    // ✅ (D) reviewerEmail line removed – backend sets it from token
     const newReview = {
       foodId: id,
       mealName: meal.foodName,
@@ -111,7 +109,6 @@ const MealDetails = () => {
     };
 
     try {
-      // ✅ (C) axios.post → api.post
       await api.post(`/reviews`, newReview);
       toast.success('Review added successfully!');
       setReviewData({ rating: 0, comment: '' });
@@ -123,6 +120,7 @@ const MealDetails = () => {
     }
   };
 
+  // ✅ Updated handleAddFavorite with the new payload and response handling
   const handleAddFavorite = async () => {
     if (!user) {
       toast.error('Please sign in to add favorites');
@@ -131,21 +129,25 @@ const MealDetails = () => {
     
     if (!meal) return toast.error('Meal not loaded yet');
 
-    const favData = {
-      userEmail: user.email,
-      mealId: meal._id.toString(),
-      mealName: meal.foodName,
+    const payload = {
+      mealId: meal._id,               // ✅ must
+      mealName: meal.foodName,        // ✅ must
       chefId: meal.chefId,
       chefName: meal.chefName,
       price: meal.price,
-      addedTime: new Date().toISOString(),
     };
 
     try {
-      await api.post(`/favorites`, favData); // ✅ using api
-      toast.success('Added to favorites!');
-    } catch {
-      toast.error('Failed to add to favorites');
+      const res = await api.post("/favorites", payload);
+
+      if (res.data?.insertedId) {
+        toast.success("Added to favorites!");
+      } else {
+        toast.success(res.data?.message || "Already in favorites!");
+      }
+    } catch (err) {
+      console.log(err);
+      toast.error("Login needed or JWT missing");
     }
   };
 
@@ -338,7 +340,7 @@ const MealDetails = () => {
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={handleAddFavorite}
+                onClick={handleAddFavorite} // ✅ Updated handler
                 className="flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-white border-2 border-gray-200 dark:border-gray-700 px-6 py-4 rounded-xl font-bold hover:border-red-300 hover:text-red-500 transition-all duration-300 cursor-pointer"
               >
                 <FiHeart />
