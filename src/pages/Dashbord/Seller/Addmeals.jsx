@@ -8,10 +8,27 @@ import { AuthContext } from '../../../Context/AuthContext';
 
 const AddMeals = () => {
   const { user } = useContext(AuthContext);
+  const [chefId, setChefId] = useState(""); // ✅ State for real chefId from DB
 
   useEffect(() => {
     document.title = "LocalChefBazaar || Create meal";
   }, []);
+
+  // ✅ Fetch chefId using /users/role/:email endpoint
+  useEffect(() => {
+    const loadChefId = async () => {
+      if (!user?.email) return;
+      try {
+        // 🔁 পরিবর্তন: এন্ডপয়েন্ট এখন /users/role/:email
+        const res = await api.get(`/users/role/${encodeURIComponent(user.email)}`);
+        setChefId(res.data?.chefId || "");
+      } catch (error) {
+        console.error("Failed to load chef ID:", error);
+        toast.error("Could not load Chef ID. Please try again later.");
+      }
+    };
+    loadChefId();
+  }, [user?.email]);
 
   const {
     register,
@@ -26,15 +43,13 @@ const AddMeals = () => {
 
   const [loading, setLoading] = useState(false);
 
-  const generateChefId = (email, foodName) => {
-    const emailPart = email.substring(0, 3).toLowerCase();
-    const lengthPart = foodName.length;
-    const timestamp = Date.now().toString().slice(-4);
-    return `${emailPart}${lengthPart}${timestamp}`;
-  };
-
   const onSubmit = async (data) => {
     if (!data.foodImage[0]) return alert('Please select an image!');
+
+    if (!chefId) {
+      toast.error("Chef ID not found. Please get admin approval first.");
+      return;
+    }
 
     setLoading(true);
 
@@ -50,8 +65,6 @@ const AddMeals = () => {
 
       const imageUrl = response.data.data.url;
 
-      const chefId = generateChefId(user?.email || '', data.foodName);
-
       const finalData = {
         foodName: data.foodName,
         chefName: data.chefName,
@@ -61,17 +74,15 @@ const AddMeals = () => {
         ingredients: data.ingredients.split(',').map((item) => item.trim()),
         estimatedDeliveryTime: data.estimatedDeliveryTime,
         chefExperience: data.chefExperience,
-        chefId: chefId,
+        chefId: chefId,                // ✅ from state
         userEmail: user?.email || '',
         createdAt: new Date(),
         deliveryArea: data.deliveryArea,
       };
 
-      // ✅ এখানে api ব্যবহার করা হয়েছে (cookie automatically attached)
       await api.post("/meals", finalData);
 
       toast.success('Meal added successfully!');
-      console.log(finalData);
       reset();
     } catch (error) {
       console.error('Error:', error);
@@ -89,6 +100,7 @@ const AddMeals = () => {
       </h2>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* বাকি ফর্মের ফিল্ডগুলো অপরিবর্তিত থাকবে */}
         <div>
           <label className="block mb-1 font-semibold text-orange-500">
             Food Name

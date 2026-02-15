@@ -21,8 +21,8 @@ import {
   FaChartLine,
   FaCalendarAlt
 } from 'react-icons/fa';
-import axios from 'axios';
 import Loading from '../../../Componentes/Loading';
+import { api } from "../../../api/axiosSecure"; // ✅ Correct API instance with auth
 
 ChartJS.register(
   CategoryScale,
@@ -48,17 +48,26 @@ const Analytics = () => {
       
       try {
         setLoading(true);
-        
-        // Fetch chef analytics data
-        const [mealsRes, ordersRes, reviewsRes] = await Promise.allSettled([
-          axios.get(`${import.meta.env.VITE_BACKEND_API}/chef-meals/${user.email}`),
-          axios.get(`${import.meta.env.VITE_BACKEND_API}/chef-orders/${user.email}`),
-          axios.get(`${import.meta.env.VITE_BACKEND_API}/chef-reviews/${user.email}`)
+
+        // 1) Get chefId from email
+        const chefRes = await api.get(`/chef-id/${encodeURIComponent(user.email)}`);
+        const chefId = chefRes?.data?.chefId;
+
+        // 2) Fetch meals and reviews using email
+        const [mealsRes, reviewsRes] = await Promise.allSettled([
+          api.get(`/user-meals/${encodeURIComponent(user.email)}`),
+          api.get(`/user-reviews/${encodeURIComponent(user.email)}`),
         ]);
 
         const meals = mealsRes.status === 'fulfilled' ? mealsRes.value.data.data || [] : [];
-        const orders = ordersRes.status === 'fulfilled' ? ordersRes.value.data.data || [] : [];
         const reviews = reviewsRes.status === 'fulfilled' ? reviewsRes.value.data.data || [] : [];
+
+        // 3) Fetch orders using chefId (if available)
+        let orders = [];
+        if (chefId) {
+          const ordersRes = await api.get(`/chef-orders/${chefId}`);
+          orders = ordersRes.data.data || [];
+        }
 
         setAnalyticsData({ meals, orders, reviews });
       } catch (error) {
@@ -70,7 +79,7 @@ const Analytics = () => {
     };
 
     fetchAnalytics();
-  }, [user?.email, timeRange]);
+  }, [user?.email, timeRange]); // timeRange can be used later for filtering
 
   const getMetrics = () => {
     if (!analyticsData) return {};
@@ -154,7 +163,7 @@ const Analytics = () => {
       ],
     };
 
-    // Meal categories performance
+    // Meal categories performance (mock data – replace with real if available)
     const categories = ['Breakfast', 'Lunch', 'Dinner', 'Snacks', 'Desserts'];
     const categoryOrders = categories.map(() => Math.floor(Math.random() * 20) + 5);
 
