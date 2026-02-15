@@ -1,12 +1,17 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { FaUtensils } from 'react-icons/fa';
-import axios from 'axios';
+import { api } from "../../../api/axiosSecure";
+import axios from "axios"; // imgbb upload এর জন্য
 import toast, { Toaster } from 'react-hot-toast';
 import { AuthContext } from '../../../Context/AuthContext';
 
 const AddMeals = () => {
   const { user } = useContext(AuthContext);
+
+  useEffect(() => {
+    document.title = "LocalChefBazaar || Create meal";
+  }, []);
 
   const {
     register,
@@ -62,11 +67,8 @@ const AddMeals = () => {
         deliveryArea: data.deliveryArea,
       };
 
-      await axios.post(
-        `${import.meta.env.VITE_BACKEND_API}
-/meals`,
-        finalData
-      );
+      // ✅ এখানে api ব্যবহার করা হয়েছে (cookie automatically attached)
+      await api.post("/meals", finalData);
 
       toast.success('Meal added successfully!');
       console.log(finalData);
@@ -81,7 +83,6 @@ const AddMeals = () => {
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-yellow-50 shadow-lg rounded-lg mt-10">
-      <title>LocalChefBazaar || Create meal</title>
       <Toaster />
       <h2 className="text-3xl font-bold mb-6 text-orange-600 flex items-center gap-2">
         <FaUtensils /> Create Meal
