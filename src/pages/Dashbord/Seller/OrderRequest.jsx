@@ -14,8 +14,7 @@ const OrderRequest = () => {
     if (!user?.email) return;
     setLoading(true);
     try {
-      // ✅ FIX 1: Encode email to handle special characters
-      const res = await api.get(`/user-chef-orders/${encodeURIComponent(user.email)}`);
+      const res = await api.get(`/user-chef-orders/${user.email}`);
       if (res.data.success) {
         const sortedOrders = res.data.data.sort((a, b) => {
           if (a.orderStatus === 'pending' && b.orderStatus !== 'pending') return -1;
@@ -27,9 +26,8 @@ const OrderRequest = () => {
         toast.error(res.data.message || 'Failed to load orders');
       }
     } catch (error) {
-      // ✅ FIX 2: Log status and show detailed error message
-      console.error("OrderRequest error:", error?.response?.status, error?.response?.data);
-      toast.error(error?.response?.data?.message || 'Server Error!');
+      console.error(error);
+      toast.error('Server Error!');
     } finally {
       setLoading(false);
     }
