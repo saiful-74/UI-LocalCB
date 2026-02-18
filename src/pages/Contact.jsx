@@ -70,13 +70,13 @@ const Contact = () => {
     {
       icon: <FiPhone className="text-2xl" />,
       title: "Phone",
-      details: ["+880 1818 777 856", "+880 1818 777 856"],
+      details: ["+880 1562345432", "+880 1562345432"],
       color: "text-blue-500"
     },
     {
       icon: <FiMail className="text-2xl" />,
       title: "Email",
-      details: ["hakimcolor777@gmail.com", "hakimcolor777@gmail.com"],
+      details: ["saifulmaim2020@gmail.com", "saifulmaim2020@gmail.com"],
       color: "text-green-500"
     },
     {

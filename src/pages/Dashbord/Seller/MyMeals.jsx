@@ -3,7 +3,7 @@ import { AuthContext } from '../../../Context/AuthContext';
 import Swal from 'sweetalert2';
 import Loading from '../../../Componentes/Loading';
 import { useForm } from 'react-hook-form';
-import { api } from '../../../api/axiosSecure'; // ✅ axios instance import
+import { api } from '../../../api/axiosSecure';
 
 const MyMeals = () => {
   const { user } = useContext(AuthContext);
@@ -18,6 +18,7 @@ const MyMeals = () => {
     formState: { errors },
   } = useForm();
 
+  // Populate form when a meal is selected for editing
   useEffect(() => {
     if (selectedMeal) {
       const defaultValues = {
@@ -34,6 +35,7 @@ const MyMeals = () => {
     }
   }, [selectedMeal, reset]);
 
+  // Normalize MongoDB _id (handles $oid format)
   const normalizeId = (m) => {
     const id = m._id;
     if (!id) return m;
@@ -43,11 +45,12 @@ const MyMeals = () => {
     return m;
   };
 
+  // Fetch meals for the logged-in user
   useEffect(() => {
     const fetchMeals = async () => {
       if (!user?.email) return;
       try {
-        const res = await api.get(`/user-meals/${user.email}`); // ✅ replaced fetch
+        const res = await api.get(`/user-meals/${user.email}`);
         if (res.data.success) {
           const normalized = res.data.data.map((m) => normalizeId(m));
           setMeals(normalized);
@@ -62,6 +65,7 @@ const MyMeals = () => {
     fetchMeals();
   }, [user?.email]);
 
+  // Delete a meal (no encodeURIComponent needed)
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: 'Are you sure?',
@@ -75,7 +79,7 @@ const MyMeals = () => {
 
     if (result.isConfirmed) {
       try {
-        await api.delete(`/meals/${id}`); // ✅ replaced fetch
+        await api.delete(`/meals/${id}`);
         Swal.fire('Deleted!', 'Meal has been deleted.', 'success');
         setMeals((prev) => prev.filter((meal) => meal._id !== id));
       } catch (err) {
@@ -95,17 +99,21 @@ const MyMeals = () => {
     reset();
   };
 
+  // ✅ SAFE UPDATE – only updates UI after server confirms success
   const onUpdate = async (data) => {
-    if (!selectedMeal || !selectedMeal._id) {
+    if (!selectedMeal?._id) {
       Swal.fire('Error', 'No meal selected or missing id', 'error');
       return;
     }
 
+    // Convert ingredients string to array
     const ingredientsArray = data.ingredients
-      ? data.ingredients.split(',').map((item) => item.trim())
+      ? data.ingredients.split(',').map((item) => item.trim()).filter(Boolean)
       : [];
 
+    // ✅ Keep all original fields (chefName, chefId, etc.) and merge updates
     const payload = {
+      ...selectedMeal,                    // preserves existing data
       foodName: data.foodName,
       foodImage: data.foodImage,
       price: Number(data.price),
@@ -114,29 +122,23 @@ const MyMeals = () => {
       ingredients: ingredientsArray,
     };
 
-    // Optimistic update
-    const optimisticMeal = {
-      ...selectedMeal,
-      ...payload,
-      _id: selectedMeal._id,
-    };
-    setMeals((prev) =>
-      prev.map((m) => (m._id === optimisticMeal._id ? optimisticMeal : m))
-    );
-    setSelectedMeal(null);
-    Swal.fire('Updated!', 'Meal has been updated.', 'success');
-
-    // Background server update
     try {
-      const id = encodeURIComponent(String(selectedMeal._id).trim());
-      await api.put(`/meals/${id}`, payload); // ✅ replaced fetch
+      const id = String(selectedMeal._id).trim();   // no encodeURIComponent
+      const res = await api.put(`/meals/${id}`, payload);
+
+      if (res?.data?.success) {
+        // ✅ Update UI only after server confirms success
+        setMeals((prev) =>
+          prev.map((m) => (String(m._id) === id ? { ...m, ...payload } : m))
+        );
+        setSelectedMeal(null);                      // close modal
+        Swal.fire('Updated!', 'Meal has been updated.', 'success');
+      } else {
+        Swal.fire('Error', 'Server did not update meal', 'error');
+      }
     } catch (err) {
-      console.error('Background update failed:', err);
-      Swal.fire(
-        'Warning',
-        'Server update failed — changes may not be saved.',
-        'warning'
-      );
+      console.error('Update failed:', err);
+      Swal.fire('Error', 'Update failed on server', 'error');
     }
   };
 
@@ -239,6 +241,7 @@ const MyMeals = () => {
           </div>
         )}
 
+        {/* Update Modal */}
         {selectedMeal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
             <div className="bg-white p-6 rounded-xl w-96 relative">
