@@ -12,7 +12,7 @@ const ChefSpotlight = () => {
       experience: "15 years",
       rating: 4.9,
       location: "Downtown",
-      image: "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=300&h=300&fit=crop&crop=face",
+      image: "https://i.ibb.co.com/XxX2Gq9T/moreau-tokyo-o-NFT5k-Tqd-NY-unsplash.jpg",
       signature: "Authentic Paella Valenciana",
       orders: "2,500+",
       bio: "Trained in Valencia, Spain, Maria brings authentic Mediterranean flavors to your table."
@@ -24,7 +24,7 @@ const ChefSpotlight = () => {
       experience: "12 years",
       rating: 4.8,
       location: "Midtown",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face",
+      image: "https://i.ibb.co.com/jZkJ5N4V/goodeats-yqr-AKCB74kr4-UI-unsplash.jpg",
       signature: "Kimchi Fried Rice Bowl",
       orders: "1,800+",
       bio: "Blending traditional Korean techniques with modern presentation and local ingredients."
@@ -36,7 +36,7 @@ const ChefSpotlight = () => {
       experience: "10 years",
       rating: 4.9,
       location: "Riverside",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face",
+      image: "https://i.ibb.co.com/WvTyLHsS/yosuke-ota-IId-Ircezm48-unsplash.jpg",
       signature: "Feijoada Completa",
       orders: "2,200+",
       bio: "Bringing the warmth of Brazilian home cooking with family recipes passed down for generations."

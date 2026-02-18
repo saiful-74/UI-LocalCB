@@ -11,7 +11,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../Firebase/Firebase.confige';
 import axios from 'axios';
-import { api } from '../api/axiosSecure'; // ✅ import the axios instance from your api folder
+import { api } from '../api/axiosSecure'; // ✅ public calls (no credentials needed)
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -21,7 +21,7 @@ const AuthProvider = ({ children }) => {
   const googleProvider = new GoogleAuthProvider();
   const BASE_URL = import.meta.env.VITE_BACKEND_API;
 
-  // Create axios instance with credentials (you may keep this for other calls)
+  // ✅ Axios instance for requests that need credentials (JWT cookie)
   const axiosSecure = axios.create({
     baseURL: BASE_URL,
     withCredentials: true,
@@ -80,10 +80,9 @@ const AuthProvider = ({ children }) => {
     return result;
   };
 
-  // ✅ Replaced logout function exactly as instructed
   const signoutUser = async () => {
     try {
-      await api.post('/logout'); // 🔥 cookie clear from backend
+      await api.post('/logout'); // 🔥 clear cookie from backend
       await signOut(auth);
     } catch (error) {
       console.log(error);
@@ -97,15 +96,35 @@ const AuthProvider = ({ children }) => {
 
       if (currentUser?.email) {
         try {
+          // 1) JWT cookie সেট করো
           await axiosSecure.post('/jwt', { email: currentUser.email });
-          
-          const roleRes = await axiosSecure.get(`/users/role/${currentUser.email}`);
-          setRole(roleRes.data?.role || 'user');
+
+          // 2) role আনার চেষ্টা করো
+          try {
+            const roleRes = await axiosSecure.get(`/users/role/${currentUser.email}`);
+            setRole(roleRes.data?.role || 'user');
+          } catch (err) {
+            // 3) 404 মানে user ডাটাবেসে নেই → নতুন ইউজার তৈরি করো (public api ব্যবহার করে)
+            if (err.response?.status === 404) {
+              await api.post('/users', {
+                name: currentUser.displayName || 'User',
+                email: currentUser.email,
+                photo: currentUser.photoURL || '',
+              });
+
+              // আবার role fetch করো
+              const roleRes2 = await axiosSecure.get(`/users/role/${currentUser.email}`);
+              setRole(roleRes2.data?.role || 'user');
+            } else {
+              throw err; // অন্য কোনো error হলে উপরে পাঠাও
+            }
+          }
         } catch (error) {
           console.error('Error in auth flow:', error);
           setRole('user');
         }
       } else {
+        // ইউজার লগআউট করলে cookie ক্লিয়ার করো
         try {
           await axiosSecure.post('/logout');
         } catch (error) {
@@ -118,7 +137,7 @@ const AuthProvider = ({ children }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, []); // ✅ axiosSecure ডিপেন্ডেন্সি হিসেবে না রাখাই ভালো (এটি স্থির)
 
   const authInfo = {
     user,

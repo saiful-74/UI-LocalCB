@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useContext } from 'react';
-import axios from 'axios';
 import { AuthContext } from '../../../Context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import Loading from '../../../Componentes/Loading';
+import { axiosSecure } from '../../../api/axiosSecure'; // ✅ import axiosSecure
 
 const Profile = () => {
   const { user, loading } = useContext(AuthContext);
@@ -14,10 +14,8 @@ const Profile = () => {
 
     const fetchUser = async () => {
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_API}
-/users/${user.email}`
-        );
+        // ✅ use axiosSecure with relative path
+        const res = await axiosSecure.get(`/users/${user.email}`);
         setUserInfo(res.data.data);
       } catch (err) {
         console.error(err);
@@ -33,10 +31,8 @@ const Profile = () => {
 
     const fetchChefId = async () => {
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_API}
-/chef-id/${user.email}`
-        );
+        // ✅ use axiosSecure with relative path
+        const res = await axiosSecure.get(`/chef-id/${user.email}`);
         setChefId(res.data.chefId);
       } catch (err) {
         console.error('Failed to fetch chefId:', err);
@@ -59,14 +55,11 @@ const Profile = () => {
               className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer"
               onClick={async () => {
                 try {
-                  const res = await axios.post(
-                    `${import.meta.env.VITE_BACKEND_API}
-/role-request`,
-                    {
-                      email: user.email,
-                      requestedRole: role,
-                    }
-                  );
+                  // ✅ use axiosSecure with relative path
+                  const res = await axiosSecure.post('/role-request', {
+                    email: user.email,
+                    requestedRole: role,
+                  });
 
                   setUserInfo((prev) => ({ ...prev, roleRequest: role }));
                   toast.success(res.data.message, { position: 'top-center' });

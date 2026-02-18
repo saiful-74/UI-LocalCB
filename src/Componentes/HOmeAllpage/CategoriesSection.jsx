@@ -6,25 +6,25 @@ const CategoriesSection = () => {
   const categories = [
     {
       name: "Mexican Flavors",
-      image: "https://images.unsplash.com/photo-1565299507177-b0ac66763828?w=400&h=300&fit=crop",
+      image: "https://i.ibb.co.com/M5RdxKnD/snappr-e-Gwm8sfh-No8-unsplash.jpg",
       count: "35+ dishes",
       color: "from-yellow-500 to-red-500"
     },
     {
       name: "Mediterranean",
-      image: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=300&fit=crop",
+      image: "https://i.ibb.co.com/fd3vFZSN/alexandra-tran-Ijr-Bf8rt-KXE-unsplash.jpg",
       count: "40+ dishes",
       color: "from-blue-500 to-purple-500"
     },
     {
       name: "Indian Spices",
-      image: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&h=300&fit=crop",
+      image: "https://i.ibb.co.com/20MxjbtL/omkar-mangalekar-r-ENB3s-Yr-NA0-unsplash.jpg",
       count: "55+ dishes",
       color: "from-orange-500 to-pink-500"
     },
     {
       name: "American Classic",
-      image: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=400&h=300&fit=crop",
+      image: "https://i.ibb.co.com/ynxShpz1/luke-tokaryk-VANvc2u1eic-unsplash.jpg",
       count: "30+ dishes",
       color: "from-purple-500 to-indigo-500"
     }

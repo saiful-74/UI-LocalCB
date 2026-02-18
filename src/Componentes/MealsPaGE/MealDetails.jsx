@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { motion } from 'framer-motion';
 import { AuthContext } from '../../Context/AuthContext';
+
 import Loading from '../Loading';
 import { 
   FiArrowLeft, 
@@ -42,9 +43,9 @@ const MealDetails = () => {
   // Mock additional images for demonstration
   const getAdditionalImages = (mainImage) => [
     mainImage,
-    'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=400&fit=crop'
+    'https://i.ibb.co.com/wZC9crm8/litoon-dev-f-Ax-SUiu-HZM-unsplash.jpg',
+    'https://i.ibb.co.com/zThTv2zh/pexels-ibnulharezmi-9415592.jpg',
+    'https://i.ibb.co.com/G4RrK55f/fried-chicken-along-with-potatoes-red-tomatoe-inside-white-plate-brown-desk.jpg'
   ];
 
   useEffect(() => {
@@ -130,12 +131,15 @@ const MealDetails = () => {
     if (!meal) return toast.error('Meal not loaded yet');
 
     const payload = {
-      mealId: meal._id,               // ✅ must
-      mealName: meal.foodName,        // ✅ must
-      chefId: meal.chefId,
-      chefName: meal.chefName,
-      price: meal.price,
-    };
+  mealId: meal._id,          // ✅ must
+  mealName: meal.mealName || meal.name, // ✅ must (যেটা আছে)
+  chefId: meal.chefId,
+  chefName: meal.chefName,
+  price: meal.price,
+};
+
+
+
 
     try {
       const res = await api.post("/favorites", payload);
